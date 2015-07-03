@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script type="text/javascript" src="jquery-1.11.2.min.js"></script>
+</head>
+<body>
+  <button id="btn">go!</button><br>
+  <span id="someValue">234.00</span>
+
+
+  <script>
+    (function($){
+
+      function Mecntr(el, opts){
+
+        this.el = el;
+        this.$el = $(el);
+
+        this._opts = $.extend({
+          mask: "# ###.00",
+          decimalSep: ".",
+          thousandSep: "",
+          value: 0,
+          baseClass: "mechounter"
+        }, opts);
+
+        if(this._opts.mask){
+          this.parseMask(this._opts.mask);
+        }
+
+      }
+
+      Mecntr.prototype.parseMask = function (mask, o){
+
+        mask = /(\D?)(\d+)((\D)(\d+))?/.exec(mask);
+
+        if(!mask) return;
+
+        mask = mask.split(',');
+
+        o = o || {};
+
+        o.thousandSep = mask[1];
+
+        o.digits = Math.min(+mask[2] || 1, 15);
+
+        o.decimalSep = mask[4] || ".";
+
+        o.decimals = Math.min(+mask[5] || 0, o.digits-1);
+
+        o.multiplier = Math.pow(10, self.decDigits);
+      };
+
+    })(jQuery);
+
+    $(function(){
+
+      $("#btn").click(function(){
+
+        var $el = $("#someValue");
+
+        var O = parseMask(",3,,2"); // our Object
+
+        O.createElements = createElements;
+
+        O.createElements();
+
+        $( "li" ).animate({
+          opacity: .5,
+          height: "50%"
+        }, {
+          step: function( now, fx ) {
+            var data = fx.elem.id + " " + fx.prop + ": " + now;
+            $( "body" ).append( "<div>" + data + "</div>" );
+          }
+        });
+
+      });
+
+      function subEl(type, text){
+        return $("<span class='mechcounter-" + type + "'>" + text + "</span>");
+      }
+
+      function createElements(){
+
+        var self = this;
+
+        var thousand = self.thousandDelimiter !== "";
+
+        self.html = [];
+
+        for(var i = 0; i < self.intDigits; i++){
+
+          if(thousand && i > 0 && i % 3 === 0){
+            self.html.push(subEl("delim", self.thousandDelimiter));
+          }
+
+          self.html.push(subEl("digit", "0"));
+        }
+
+        var res = [];
+
+      }
+
+      function parseMask(mask){
+
+        if(typeof mask !== "string") mask = "";
+
+        mask = mask.split(',');
+
+        var res = {};
+
+        res.thousandDelimiter = mask[0];
+
+        res.intDigits = +("00" + mask[1]) || 1;
+
+        res.decimalDelimiter = mask[2] || ".";
+
+        res.decDigits = +("00" + mask[3]) || 0;
+
+        res.multiplier = Math.pow(10, self.decDigits);
+
+        return res;
+      }
+
+    });
+  </script>
+  </body>
+</html>

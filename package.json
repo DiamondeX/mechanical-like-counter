@@ -1,0 +1,22 @@
+{
+  "name": "mechanical-like-counter",
+  "version": "0.0.1",
+  "description": "Widget to represent enumerable multidigit values to look and behave like mechanical counter",
+  "main": "mechounter.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DiamondeX/mechanical-like-counter.git"
+  },
+  "keywords": [
+    "jquery"
+  ],
+  "author": "DiamondeX",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DiamondeX/mechanical-like-counter/issues"
+  },
+  "homepage": "https://github.com/DiamondeX/mechanical-like-counter#readme"
+}
