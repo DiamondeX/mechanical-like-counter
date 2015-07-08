@@ -2,7 +2,6 @@
 
   var PiD4 = 0.7853981633974483; // === Math.Pi / 4;
   var toLog10 = 0.4342944819032518; // === 1 / Math.log(10)
-  var frLog10 = 2.302585092994046;  // === Math.log(10)
 
   var $dbg = $("#debug");
 
@@ -195,131 +194,53 @@
   Mecntr.prototype._setValue = function(val, delayMs){
     var self = this
     , o = this._opts
-    , oldValue = this._value
     , finalVal = val * o.multiplier
+    , oldValue = this._value
     , dif = finalVal - oldValue
-    , sgn = dif < 0 ? -1 : 1
-    , aDif = Math.abs(dif)
-    , k = 1
-    , spN = 0
-    , t1 = 0
-    , t2
+    , t2 = Math.min(delayMs, o.slowdownMs) // this._slowdownMs
+    , t1 = delayMs - t2 // this._uniformMs
+    , speed0 = dif/(t1 + t2 * PiD4)
     ;
-    
-    if(false){
-      var nnnnn
-      // начальная скорость вращения
 
-      // время на замедление последнего разряда в секундах
-        , lgFinSlow = 2
+    window.initDraw(delayMs, dif, oldValue);
 
-      // число разрядов разности значений счетчика
-        , lgDif   = toLog10 * Math.log(aDif)
-
-      // разрядность длительности (в секундах) изменения значения
-        , lgDelay = toLog10 * Math.log(delayMs * 0.001)
-
-      // время, в течении которого происходит снижение (по модулю) скорости изменения значения
-        , t2 = (lgDif + lgFinSlow) * 1000 // this._slowdownMs
-
-      //время, в течении которого скорость изменения значения постоянна
-        , t1 // this._uniformMs
-
-      //длина интервала равномерного изменения значения
-        , aDif1
-      ;
-    }
-    
-    function lgSpeed(t, k){
-      k = k || 1;
-      return Math.pow(10, k*t-2);
+    function calcPerceptible(speed){
+      var p = speed * o.perceptibleChangeMs;
+      p = Math.ceil( Math.log(p) * toLog10 );
+      return Math.max(0, p);
     }
 
-    function lgValue(t, k){
-      k = k || 1;
-      return toLog10 * lgSpeed(t, k) / k;
-    }
-
-    function lgValueBySpeed(s, k){
-      k = k || 1;
-      return toLog10 * s / k;
-    }
-
-    function timeByLgVal(v, k){
-      k = k || 1;
-      return timeByLgSpeed(v * k * frLog10, k);
-    }
-
-    function timeByLgSpeed(s, k){
-      k = k || 1;
-      return (toLog10 * Math.log(s) + 2) / k;
-    }
-    
-    t2 = timeByLgVal(aDif) * 1000;
-
-    if(t2 > delayMs){
-      
-      //iterative calculation of parameters
-      (function(){
-        var i = 0
-        , kk = 0.5
-        , ko = k
-        , invDelay = 1/delayMs
-        ;
-        
-        while(Math.abs(t2 * invDelay - 1) > 1e-14){
-          i++;
-          k *= 1 + kk;
-          t2 = timeByLgVal(aDif, k) * 1000;
-          if(t2 < delayMs) {
-            kk *= 0.5;
-            k = ko;
-          }else{
-            ko = k;
-          }
-        }
-        console.log(" iterations (1): ", i, ", k:", k);
-      })();
-      
-    }else{
-      
-      //iterative calculation of parameters
-      (function(){
-        var i = 0
-        , t2o = -1
-        ;
-        
-        while(t2o !== t2){
-          i++;
-          t2o = t2;
-          t1 = delayMs - t2;
-          spN = aDif / t1;
-          t2 = timeByLgSpeed(spN);
-        }
-        console.log(" iterations (2): ", i);
-
-      })();
-      
-    }
-
-    window.initDraw(delayMs, aDif, oldValue);
-
+    this._perceptibleDgt = calcPerceptible(speed0);
     this._startTime = Date.now();
-    this._speed = spN;
 
-    this._currentValues = function(t){
-      
-      if(t <= t1){
-        self._value = oldValue + sgn * spN * t;
-        return;
-      }
-      
+    console.log({
+      finalVal: finalVal,
+      dif: dif,
+      t2: t2,
+      t1: t1,
+      speed0: speed0,
+      startTime: this._startTime,
+      _perceptibleDgt: this._perceptibleDgt
+    });
+
+    function logify(dv){
+      return dif * Math.log(1+dv/dif * 1.718281828459045);
+    }
+
+    this._currentValue = function(t){ //(v-v0)/dv ==> Math.log(1+(v-v0)/dv * 1.718281828459045)
+      //$dbg.text("1. "+t+", "+speed0 * t);
+      //if(t <= t1) return speed0 * t + oldValue; // === v
+      if(t <= t1) return logify(logify(logify(logify(speed0 * t)))) + oldValue;
+
       t -= t1;
-      t = t2 - t;
-      
-      self._speed = lgSpeed(t, k);
-      self._value = lgValueBySpeed(self._speed, k);
-      
+      var sin = t / t2
+      , ang = Math.asin(sin)
+      , cos = Math.cos(ang)
+      , sqr = cos * sin
+      ;
+      self._perceptibleDgt = calcPerceptible(speed0 * cos);
+      //return speed0 * ((sqr + ang) * 0.5 * t2 + t1) + oldValue;
+      return logify(logify(logify(logify(speed0 * ((sqr + ang) * 0.5 * t2 + t1))))) + oldValue;
     }
 
     clearInterval(self._interval);
@@ -331,8 +252,8 @@
         self._fillValue(finalVal);
         return;
       }
-      self._fillValue(self._currentValue(t));
-      return;
+      //self._fillValue(self._currentValue(t));
+      //return;
 
       var v = self._currentValue(t)
       , dLen = self._digits.length
