@@ -68,24 +68,24 @@
       }
 
       var cntr = window.cntr = new MechanicalCounter($("#someValue"), {
-        mask: "`1,0",
-        value: 345
+        mask: "`7,2",
+        value: 345.89
       });
 
       $("#btn0").click(function(){
-        cntr.fillValue(5022.98);
+        cntr.setValue(152.999, 20000);
       });
 
       $("#btn1").click(function(){
-        cntr.setValue(15022.999, 20000);
+        cntr.setValue(152.999, 2000);
       });
 
       $("#btn2").click(function(){
-        cntr.fillValue(235);
+        cntr.setValue(1500022.999, 20000);
       });
 
       $("#btn3").click(function(){
-        cntr.spinValue(345);
+        cntr.setValue(1500022.999, 2000);
       });
 
       $("#btn4").keydown(function(e){

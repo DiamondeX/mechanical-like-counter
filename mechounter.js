@@ -57,7 +57,7 @@
 
     o.decimalSep = mask[4] || ".";
 
-    o.decimals = Math.min(+mask[5] || 0, o.digits-1);
+    o.decimals = mask[5];
 
   };
 
@@ -202,34 +202,38 @@
     , aDif = Math.abs(dif)
     , k = 1
     , spN = 0
-    , t1 = 0
-    , t2
+    , spNms
+    , delay = delayMs * 0.001
+    , t1 = 0 //in seconds
+    , t2     //in seconds
+    , t1ms
+    , t2ms
     ;
-    
+
     if(false){
-      var nnnnn
-      // начальная скорость вращения
-
-      // время на замедление последнего разряда в секундах
-        , lgFinSlow = 2
-
-      // число разрядов разности значений счетчика
-        , lgDif   = toLog10 * Math.log(aDif)
-
-      // разрядность длительности (в секундах) изменения значения
-        , lgDelay = toLog10 * Math.log(delayMs * 0.001)
-
-      // время, в течении которого происходит снижение (по модулю) скорости изменения значения
-        , t2 = (lgDif + lgFinSlow) * 1000 // this._slowdownMs
-
-      //время, в течении которого скорость изменения значения постоянна
-        , t1 // this._uniformMs
-
-      //длина интервала равномерного изменения значения
-        , aDif1
-      ;
+//      var nnnnn
+//      // начальная скорость вращения
+//
+//      // время на замедление последнего разряда в секундах
+//        , lgFinSlow = 2
+//
+//      // число разрядов разности значений счетчика
+//        , lgDif   = toLog10 * Math.log(aDif)
+//
+//      // разрядность длительности (в секундах) изменения значения
+//        , lgDelay = toLog10 * Math.log(delayMs * 0.001)
+//
+//      // время, в течении которого происходит снижение (по модулю) скорости изменения значения
+//        , t2 = (lgDif + lgFinSlow) * 1000 // this._slowdownMs
+//
+//      //время, в течении которого скорость изменения значения постоянна
+//        , t1 // this._uniformMs
+//
+//      //длина интервала равномерного изменения значения
+//        , aDif1
+//      ;
     }
-    
+
     function lgSpeed(t, k){
       k = k || 1;
       return Math.pow(10, k*t-2);
@@ -254,72 +258,115 @@
       k = k || 1;
       return (toLog10 * Math.log(s) + 2) / k;
     }
-    
-    t2 = timeByLgVal(aDif) * 1000;
 
-    if(t2 > delayMs){
-      
+    t2 = timeByLgVal(aDif);
+    console.log("dif:", dif, " old->new:", oldValue, finalVal);
+    console.log("delayMs:", delayMs);
+    console.log("t2_0:", t2);
+
+    if(t2 > delay){
+
       //iterative calculation of parameters
       (function(){
         var i = 0
+        , t2o
         , kk = 0.5
         , ko = k
-        , invDelay = 1/delayMs
         ;
-        
-        while(Math.abs(t2 * invDelay - 1) > 1e-14){
+
+        do {
           i++;
+          t2o = t2;
+
           k *= 1 + kk;
-          t2 = timeByLgVal(aDif, k) * 1000;
-          if(t2 < delayMs) {
+          t2 = timeByLgVal(aDif, k);
+          if(t2 < delay) {
             kk *= 0.5;
             k = ko;
           }else{
             ko = k;
           }
-        }
+        } while(t2o !== t2);
+
         console.log(" iterations (1): ", i, ", k:", k);
       })();
-      
+
     }else{
-      
+
       //iterative calculation of parameters
       (function(){
         var i = 0
-        , t2o = -1
+        , t2o
+        , sp_ = 1
+        , mod = t2
         ;
-        
-        while(t2o !== t2){
+
+        do {
           i++;
           t2o = t2;
-          t1 = delayMs - t2;
-          spN = aDif / t1;
-          t2 = timeByLgSpeed(spN);
-        }
+
+          mod *= 0.5;
+          t2 += spN > sp_ ? mod : -mod;
+          t1 = delay - t2;
+          sp_ = lgSpeed(t2);
+          spN = (aDif - lgValueBySpeed(sp_)) / t1;
+        } while(t2o !== t2);
+
         console.log(" iterations (2): ", i);
+        console.log("t2_1:", t2);
 
       })();
-      
+
     }
+
+    t1ms = t1 * 1000;
+    t2ms = t2 * 1000;
 
     window.initDraw(delayMs, aDif, oldValue);
 
     this._startTime = Date.now();
-    this._speed = spN;
+    this._speed = spN * 0.001;
 
-    this._currentValues = function(t){
-      
+    var dbgL = 0;
+    var dbgE = 0;
+    var dbgLval = 0;
+    var dbgEval = 0;
+    var dbgLsp = 0;
+    var dbgEsp = 0;
+    var dbgLt = 0;
+    var dbgEt = 0;
+    var log = [];
+
+    this._currentValues = function(tMs){
+      var t = tMs * 0.001;
+
       if(t <= t1){
         self._value = oldValue + sgn * spN * t;
+
+        $('#debug').text("linear");
+        dbgLt = tMs;
+        dbgLval = self._value;
+        dbgLsp = self._speed;
+        if(++dbgL === 1) console.log("L0: t:",dbgLt,", v:", dbgLval, ", sp:", dbgLsp);
+
         return;
       }
-      
+
       t -= t1;
       t = t2 - t;
-      
-      self._speed = lgSpeed(t, k);
-      self._value = lgValueBySpeed(self._speed, k);
-      
+
+      spN = lgSpeed(t, k);
+
+      self._speed = spN * 0.001;
+      self._value = finalVal - sgn * lgValueBySpeed(spN, k);
+      log.push(lgValueBySpeed(spN, k));
+
+      $('#debug').text("exponential");
+      dbgEt = tMs;
+      dbgEval = self._value;
+      dbgEsp = self._speed;
+      if(++dbgE === 1) console.log("E0: t:",dbgEt,", v:", dbgEval, ", sp:", dbgEsp);
+
     }
 
     clearInterval(self._interval);
@@ -328,10 +375,13 @@
 
       if(t >= delayMs){
         clearInterval(self._interval);
+        console.log("LF: t:",dbgLt,", v:", dbgLval, ", sp:", dbgLsp);
+        console.log("EF: t:",dbgEt,", v:", dbgEval, ", sp:", dbgEsp, log);
         self._fillValue(finalVal);
         return;
       }
-      self._fillValue(self._currentValue(t));
+      self._currentValues(t);
+      self._fillValue(self._value);
       return;
 
       var v = self._currentValue(t)
