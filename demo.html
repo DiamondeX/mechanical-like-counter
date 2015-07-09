@@ -8,6 +8,28 @@
   <link rel="stylesheet" href="mechounter.css">
 </head>
 <body>
+  <style>
+    #list {
+      position: absolute;
+      width: 300px;
+      top: 0;
+      left: 650px;
+      background: #efd;
+      border: solid 1px #dfb;
+      border-radius: 5px;
+      padding: 0 6px;
+    }
+    #list > div {
+      border: solid 1px #dfb;
+      border-radius: 3px;
+      margin: 4px 0;
+      padding: 2px 6px;
+      cursor: pointer;
+    }
+    button{
+      cursor: pointer;
+    }
+  </style>
   <button id="btn_">?</button>
   <button id="btn0">1s</button>
   <button id="btnM">1m</button>
@@ -24,6 +46,10 @@
   <span id="debug"></span>
   <br>
   <span id="debug2"></span>
+
+  <br><input id="difVal" type="number" min="0" max="100000000" value="175905" placeholder="Новое значение" title="Новое значение" style="width: 170px"/>
+  <br><input id="time" type="number" min="0" max="20000" value="5000" placeholder="Интервал в меллисекундах" title="Интервал в меллисекундах" style="width: 170px"/>
+  <br><button id="btnGo">go!</button>
 
 
   <script>
@@ -104,6 +130,17 @@
         cntr.setValue(1506067.777, 5000);
       });
 
+      $("#btnGo").click(function(){
+        var dif = +$("#difVal").val();
+        var time = +$("#time").val();
+        function run(){
+          cntr.setValue(dif, time);
+        };
+
+        $("<div>").text("Знач: "+dif+", время(мс): "+time).appendTo("#list").click(run);
+        run();
+      });
+
       function deltaByKeyCode(code){
         switch(code) {
           case 37: return -0.01;
@@ -125,5 +162,6 @@
     });
   </script>
   <div id='graph' style='position:absolute; width: 400px; height: 400px; background: #fde; top: 0; left: 200px; z-index: -1'></div>
+  <div id='list'></div>
   </body>
 </html>

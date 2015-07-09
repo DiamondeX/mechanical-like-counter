@@ -3,9 +3,6 @@
   //var PiD4 = 0.7853981633974483; // === Math.Pi / 4;
   var toLog10 = 0.4342944819032518; // === 1 / Math.log(10)
   var frLog10 = 2.302585092994046;  // === Math.log(10)
-  var f_ = false; l_ = [];
-
-  var $dbg = $("#debug");
 
   //******************************
   //  Main calculation functions
@@ -324,9 +321,6 @@
 
     clearInterval(self._interval);
 
-    if(1){
-      var log = [], logt, loge;
-    }
     window.initDraw(delayMs, dif, oldVal);
     self._interval = setInterval(function(){
       var t = self._elapsed();
@@ -334,86 +328,38 @@
       if(t >= delayMs){
         clearInterval(self._interval);
         self._fillValue(newVal);
-        //console.log("whole log:", log, l_);
         return;
       }
 
       self._currentValues(t);
       window.draw(t, self._value);
 
-      if(0){
-        self._fillValue(self._value);
-        return;
-      }
-
       var v = self._value
       , dLen = self._digits.length
       ;
       var digit, d = 0, frac, empty;
 
-      if(!f_ && v < 16000){
-        f_ = true;
-      }
-
-      log.push(loge = {
-        _00_time: t,
-        _01_value: self._value,
-        _02_speed: self._speed,
-        _03_percp: self._perceptibleDgt,
-        _04_dLen : dLen,
-        _05_oDgt : o.digits,
-        _06_trace: []
-      });
-      logt = loge._06_trace;
-
       while(d < self._perceptibleDgt && (v >= 0.1 || d < o.digits || d < dLen)){
-//        logt.push(loge = {
-//          _: "twnk",
-//          d: d,
-//          v0: v
-//        });
 
         digit = self._digits[d++] || self._appendDigit(digit);
         digit.setValue(v);
         v = v/10;
 
-//        loge.v1 = v;
       }
 
       if(v >= 0.1 || d < o.digits || d < dLen){
         empty = v < 1 && d >= o.digits;
 
-        logt.push(loge = {
-          _: "perc",
-          d: d,
-          e: empty,
-          v0: v
-        });
-
         digit = self._digits[d++] || self._appendDigit(digit);
         frac = digit.setValue(v, empty);
         v = v/10;
 
-        loge.fr = frac;
-//        loge.v1 = v;
-
         while(v >= 0.1 || d < o.digits || d < dLen){
           empty = v < 1 && d >= o.digits;
-
-          if(loge._ == "perc") logt.push(loge = {
-            d: d,
-            e: empty,
-            v0: v
-          });
 
           digit = self._digits[d++] || self._appendDigit(digit);
           frac = digit.nearest(v, frac, empty);
           v = v/10;
-
-          if(!loge._){
-            loge.fr = frac;
-            loge._ = "slow"
-          }
         }
       }
 
@@ -507,6 +453,7 @@
   };
 
   Digit.prototype.setFinal = function(sgn, fl, frac){
+    this._state = this.STATE_LINKED;
     this._sgn = sgn;
     this._final = {
       v: fl + frac,
@@ -557,12 +504,23 @@
 
     if(sgn < 0){
 
+      if(floor + frac > this._oldVisVal){
+        frac = this._oldVisVal - Math.floor(this._oldVisVal);
+        if(floor !== this._oldVisVal - frac) console.error("er 23");
+      }
       if(this._oldVisVal === floor + frac) frac *= 0.9;
 
-    } else if(this._state === this.STATE_LINKING){
+    } else {
+      if(floor + frac < this._oldVisVal){
+        frac = this._oldVisVal - Math.floor(this._oldVisVal);
+        if(floor !== this._oldVisVal - frac) console.error("er 24");
+      } else {
+        if(this._state === this.STATE_LINKING){
 
-      frac = frac2;
+          frac = frac2;
 
+        }
+      }
     }
 
     var shift0 = frac * this.owner._height;
