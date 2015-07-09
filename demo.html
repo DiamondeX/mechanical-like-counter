@@ -8,12 +8,16 @@
   <link rel="stylesheet" href="mechounter.css">
 </head>
 <body>
-  <button id="btn0">go!</button>
-  <button id="btn1">go!</button>
-  <button id="btn2">go!</button>
-  <button id="btn3">go!</button>
-  <button id="btn4">s</button>
-  <button id="btn5">f</button>
+  <button id="btn_">?</button>
+  <button id="btn0">1s</button>
+  <button id="btnM">1m</button>
+  <button id="btn1">1f</button>
+  <button id="btn2">7s</button>
+  <button id="btn3">7f</button>
+  <button id="btn4">8m</button>
+  <button id="btn5">9m</button>
+  <button id="btnS">s</button>
+  <button id="btnF">f</button>
   <br>
   <span id="someValue">234.00</span>
   <br>
@@ -44,10 +48,6 @@
 
         var y = 400 - (v-v0)/dv * 400;
         $g.append("<div style='position: absolute; top: " + y + "px; left: " + x + "px; width: 1px; height: 1px; background: red'/>");
-        y = 400 - Math.log(1+(v-v0)/dv * 1.718281828459045) * 400;
-        $g.append("<div style='position: absolute; top: " + y + "px; left: " + x + "px; width: 1px; height: 1px; background: blue'/>");
-        y = 400 - Math.log(1+Math.log(1+(v-v0)/dv * 1.718281828459045) * 1.718281828459045) * 400;
-        $g.append("<div style='position: absolute; top: " + y + "px; left: " + x + "px; width: 1px; height: 1px; background: green'/>");
         $("#debug").text("t:"+t + ", v:" +v+", x:"+x+", y: "+y);
       };
 
@@ -72,8 +72,16 @@
         value: 345.89
       });
 
+      $("#btn_").click(function(){
+        console.log("sp, val: ", cntr._speed, cntr._value);
+      });
+
       $("#btn0").click(function(){
         cntr.setValue(152.999, 20000);
+      });
+
+      $("#btnM").click(function(){
+        cntr.setValue(132.999, 4000);
       });
 
       $("#btn1").click(function(){
@@ -88,30 +96,30 @@
         cntr.setValue(1500022.999, 2000);
       });
 
-      $("#btn4").keydown(function(e){
-        var d = 0;
-        switch(e.keyCode) {
-          case 37: d = -0.01; break;
-          case 38: d = -0.10; break;
-          case 39: d = +0.01; break;
-          case 40: d = +0.10; break;
-          default:
-            break;
-        }
-        cntr.spinValue(cntr._value + d);
+      $("#btn4").click(function(){
+        cntr.setValue(1503089.555, 5000);
       });
 
-      $("#btn5").keydown(function(e){
-        var d = 0;
-        switch(e.keyCode) {
-          case 37: d = -0.01; break;
-          case 38: d = -0.10; break;
-          case 39: d = +0.01; break;
-          case 40: d = +0.10; break;
-          default:
-            break;
+      $("#btn5").click(function(){
+        cntr.setValue(1506067.777, 5000);
+      });
+
+      function deltaByKeyCode(code){
+        switch(code) {
+          case 37: return -0.01;
+          case 38: return -0.10;
+          case 39: return +0.01;
+          case 40: return +0.10;
         }
-        cntr.fillValue(cntr._value + d);
+        return 0;
+      }
+
+      $("#btnS").keydown(function(e){
+        cntr.spinValue(cntr._value + deltaByKeyCode(e.keyCode));
+      });
+
+      $("#btnF").keydown(function(e){
+        cntr.fillValue(cntr._value + deltaByKeyCode(e.keyCode));
       });
 
     });

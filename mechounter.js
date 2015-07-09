@@ -1,16 +1,56 @@
 (function($){
 
-  var PiD4 = 0.7853981633974483; // === Math.Pi / 4;
+  //var PiD4 = 0.7853981633974483; // === Math.Pi / 4;
   var toLog10 = 0.4342944819032518; // === 1 / Math.log(10)
   var frLog10 = 2.302585092994046;  // === Math.log(10)
+  var f_ = false; l_ = [];
 
   var $dbg = $("#debug");
+
+  //******************************
+  //  Main calculation functions
+  //******************************
+
+  function lgSpeed(t, k){
+    k = k || 1;
+    return Math.pow(10, k*t-2);
+  }
+
+  function lgValue(t, k){
+    k = k || 1;
+    return toLog10 * lgSpeed(t, k) / k;
+  }
+
+  function lgValueBySpeed(s, k){
+    k = k || 1;
+    return toLog10 * s / k;
+  }
+
+  function timeByLgVal(v, k){
+    k = k || 1;
+    return timeByLgSpeed(v * k * frLog10, k);
+  }
+
+  function timeByLgSpeed(s, k){
+    k = k || 1;
+    return (toLog10 * Math.log(s) + 2) / k;
+  }
+
+  //******************************
+  //      Helper functions
+  //******************************
 
   function repeatStr(t, str){
     var s = str;
     while(--t){ s+= str }
     return s;
   }
+
+  ///////////////////////////////////////////////
+
+  //*********************************************
+  //      MechanicalCounter (Mecntr) Class
+  //*********************************************
 
   window.MechanicalCounter = Mecntr;
 
@@ -25,7 +65,7 @@
       showDigitMs: 300,
       slowdownMs: 19000,
       perceptibleChangeMs: 600,
-      refreshDelayMs: 16
+      refreshDelayMs: 30
     }, opts);
 
     if(opts.mask){
@@ -41,7 +81,7 @@
 
     this._initDom();
 
-  }
+  };
 
   Mecntr.prototype._parseMask = function (mask, o){
 
@@ -83,23 +123,23 @@
     , o = this._opts
     , decimals = o.decimals
     , intDigits = o.intDigits
-    , lead
-    , thGroups
+    , digit = null
     ;
+
     this.$el.html("");
     this._digitStr = this._makeSpan("digit","");
     this._thousandSepStr = this._makeSpan("thousandSep", o.thousandSep);
 
     if(decimals){
-      while(decimals--) this._addDecimalDigit();
+      while(decimals--) digit = this._addDecimalDigit(digit);
       $(this._makeSpan("decimalSep", o.decimalSep)).prependTo(self.$el);
     }
 
     this._addDigit = o.thousandSep ? this._addIntDigitWithSep : this._addIntDigit;
 
     this._intDigits = 0;
-    this._addIntDigit();
-    while(--intDigits) this._addDigit();
+    digit = this._addIntDigit(digit);
+    while(--intDigits) digit = this._addDigit(digit);
 
     this.fillValue(o.value);
 
@@ -116,7 +156,6 @@
     ;
     var digit, d = 1, frac, empty;
 
-    this._perceptibleDgt = 0;
     this._value = v;
     frac = this._digits[0].setValue(v);
     v = Math.floor(v/10);
@@ -124,10 +163,9 @@
     while(v > 0 || d < o.digits || d < dLen){
       empty = v < 1 && d >= o.digits;
 
-      digit = this._digits[d++];
-      if(!digit) digit = this._addDigit();
+      digit = this._digits[d++] || this._addDigit(digit);
       if(frac){
-        frac = digit.setValue(v + frac, empty);
+        frac = digit.setVisValue(v + frac, empty);
       }else{
         digit.setIntValue(v, empty);
       }
@@ -138,131 +176,76 @@
 
   };
 
-  Mecntr.prototype.spinValue = function(v){
-    this._spinValue(v * this._opts.multiplier);
-  };
+  Mecntr.prototype._setFinals = function(v, sgn){
 
-  Mecntr.prototype._spinValue = function(v){
-
-    var o = this._opts
+    var d = 0
     , dLen = this._digits.length
+    , fl = Math.floor(v)
+    , frac = v - fl
     ;
-    var digit, d = 0, frac, empty;
 
-    this._perceptibleDgt = dLen;
-    this._value = v;
-
-    while(v >= 0.3 || d < o.digits || d < dLen){
-      empty = v < 1 && d >= o.digits;
-
-      digit = this._digits[d++];
-      if(!digit) digit = this._addDigit();
-      digit.setValue(v, empty);
-      v = v >= 1 ? v/10 : 0;
+    while(d < dLen){
+      frac = this._digits[d++].setFinal(sgn, fl, frac)._final.nextFrac;
+      fl = Math.floor(fl/10);
     }
-
-    this.dropEmptyDigits();
-
   };
 
-  Mecntr.prototype._addDecimalDigit = function(sep){
-    var digit = new Digit(this, sep);
+  Mecntr.prototype._addDecimalDigit = function(digit, sep){
+    digit = new Digit(this, digit, sep);
     this._digits.push(digit);
     return digit;
   };
 
-  Mecntr.prototype._addIntDigit = function(sep){
+  Mecntr.prototype._addIntDigit = function(digit, sep){
     this._intDigits++;
-    return this._addDecimalDigit(sep);
+    return this._addDecimalDigit(digit, sep);
   };
 
-  Mecntr.prototype._addIntDigitWithSep = function(){
-    return this._addIntDigit(this._intDigits % 3 === 0);
+  Mecntr.prototype._addIntDigitWithSep = function(digit){
+    return this._addIntDigit(digit, this._intDigits % 3 === 0);
   };
 
-  Mecntr.prototype.setValue = function(val, delayMs){
-    var o = this._opts;
+  Mecntr.prototype._appendDigit = function(digit){
+    var fl = Math.floor(digit._final.v * 0.1)
+    , frac = digit._final.nextFrac
+    ;
 
-    if(!delayMs){
-      this.fillValue(val);
+    return this._addDigit().setNew().setFinal(digit._sgn, fl, frac);
+  };
+
+  Mecntr.prototype._setSpeed = function(spN){
+    this._speed = spN * 0.001;
+    this._perceptibleDgt = toLog10 * Math.log(this._speed * this._opts.multiplier);
+  };
+
+  Mecntr.prototype.setValue = function(newVal, delayMs){
+    newVal *= this._opts.multiplier;
+
+    if(!delayMs || this._value === newVal){
+      clearInterval(self._interval);
+      this._fillValue(newVal);
       return;
     }
 
-    this._setValue(val, delayMs);
+    this._setValue(newVal, delayMs);
 
   };
 
-  Mecntr.prototype._setValue = function(val, delayMs){
+  Mecntr.prototype._setValue = function(newVal, delayMs){
     var self = this
     , o = this._opts
-    , oldValue = this._value
-    , finalVal = val * o.multiplier
-    , dif = finalVal - oldValue
+    , oldVal = this._value
+    , delay = delayMs * 0.001
+    , dif = newVal - oldVal
     , sgn = dif < 0 ? -1 : 1
     , aDif = Math.abs(dif)
-    , k = 1
-    , spN = 0
-    , spNms
-    , delay = delayMs * 0.001
-    , t1 = 0 //in seconds
-    , t2     //in seconds
-    , t1ms
-    , t2ms
+    , k = 1   // spin slowdown intensification coefficient (k >= 1 always)
+    , spN = 0 // initial spin speed (rounds of dif per second)
+    , t1 = 0  // time in seconds of constant spin speed
+    , t2      // time in seconds of spin slowdown
     ;
 
-    if(false){
-//      var nnnnn
-//      // начальная скорость вращения
-//
-//      // время на замедление последнего разряда в секундах
-//        , lgFinSlow = 2
-//
-//      // число разрядов разности значений счетчика
-//        , lgDif   = toLog10 * Math.log(aDif)
-//
-//      // разрядность длительности (в секундах) изменения значения
-//        , lgDelay = toLog10 * Math.log(delayMs * 0.001)
-//
-//      // время, в течении которого происходит снижение (по модулю) скорости изменения значения
-//        , t2 = (lgDif + lgFinSlow) * 1000 // this._slowdownMs
-//
-//      //время, в течении которого скорость изменения значения постоянна
-//        , t1 // this._uniformMs
-//
-//      //длина интервала равномерного изменения значения
-//        , aDif1
-//      ;
-    }
-
-    function lgSpeed(t, k){
-      k = k || 1;
-      return Math.pow(10, k*t-2);
-    }
-
-    function lgValue(t, k){
-      k = k || 1;
-      return toLog10 * lgSpeed(t, k) / k;
-    }
-
-    function lgValueBySpeed(s, k){
-      k = k || 1;
-      return toLog10 * s / k;
-    }
-
-    function timeByLgVal(v, k){
-      k = k || 1;
-      return timeByLgSpeed(v * k * frLog10, k);
-    }
-
-    function timeByLgSpeed(s, k){
-      k = k || 1;
-      return (toLog10 * Math.log(s) + 2) / k;
-    }
-
     t2 = timeByLgVal(aDif);
-    console.log("dif:", dif, " old->new:", oldValue, finalVal);
-    console.log("delayMs:", delayMs);
-    console.log("t2_0:", t2);
 
     if(t2 > delay){
 
@@ -288,7 +271,7 @@
           }
         } while(t2o !== t2);
 
-        console.log(" iterations (1): ", i, ", k:", k);
+        console.log(" iterations (1): ", i, ", k:", k, ", t2:", t2, ", sp:", lgSpeed(t2)*0.001);
       })();
 
     }else{
@@ -312,107 +295,125 @@
           spN = (aDif - lgValueBySpeed(sp_)) / t1;
         } while(t2o !== t2);
 
-        console.log(" iterations (2): ", i);
-        console.log("t2_1:", t2);
+        console.log(" iterations (2): ", i, ", t2:", t2, ", sp:", spN*0.001);
 
       })();
 
     }
 
-    t1ms = t1 * 1000;
-    t2ms = t2 * 1000;
-
-    window.initDraw(delayMs, aDif, oldValue);
-
     this._startTime = Date.now();
-    this._speed = spN * 0.001;
+    this._setSpeed(spN);
+    this._setFinals(newVal, sgn);
 
-    var dbgL = 0;
-    var dbgE = 0;
-    var dbgLval = 0;
-    var dbgEval = 0;
-    var dbgLsp = 0;
-    var dbgEsp = 0;
-    var dbgLt = 0;
-    var dbgEt = 0;
-    var log = [];
-
-    this._currentValues = function(tMs){
-      var t = tMs * 0.001;
+    this._currentValues = function(timeMs){
+      var t = timeMs * 0.001;
 
       if(t <= t1){
-        self._value = oldValue + sgn * spN * t;
-
-        $('#debug').text("linear");
-        dbgLt = tMs;
-        dbgLval = self._value;
-        dbgLsp = self._speed;
-        if(++dbgL === 1) console.log("L0: t:",dbgLt,", v:", dbgLval, ", sp:", dbgLsp);
-
+        self._value = oldVal + sgn * spN * t;
         return;
       }
-
       t -= t1;
-      t = t2 - t;
 
-      spN = lgSpeed(t, k);
-
-      self._speed = spN * 0.001;
-      self._value = finalVal - sgn * lgValueBySpeed(spN, k);
-      log.push(lgValueBySpeed(spN, k));
-
-      $('#debug').text("exponential");
-      dbgEt = tMs;
-      dbgEval = self._value;
-      dbgEsp = self._speed;
-      if(++dbgE === 1) console.log("E0: t:",dbgEt,", v:", dbgEval, ", sp:", dbgEsp);
-
+      spN = lgSpeed(t2 - t, k);
+      self._setSpeed(spN);
+      self._value = newVal - sgn * lgValueBySpeed(spN, k);
+      if(sgn * self._value < sgn * oldVal){
+        self._value = oldVal;
+      }
     }
 
     clearInterval(self._interval);
+
+    if(1){
+      var log = [], logt, loge;
+    }
+    window.initDraw(delayMs, dif, oldVal);
     self._interval = setInterval(function(){
       var t = self._elapsed();
 
       if(t >= delayMs){
         clearInterval(self._interval);
-        console.log("LF: t:",dbgLt,", v:", dbgLval, ", sp:", dbgLsp);
-        console.log("EF: t:",dbgEt,", v:", dbgEval, ", sp:", dbgEsp, log);
-        self._fillValue(finalVal);
+        self._fillValue(newVal);
+        //console.log("whole log:", log, l_);
         return;
       }
-      self._currentValues(t);
-      self._fillValue(self._value);
-      return;
 
-      var v = self._currentValue(t)
+      self._currentValues(t);
+      window.draw(t, self._value);
+
+      if(0){
+        self._fillValue(self._value);
+        return;
+      }
+
+      var v = self._value
       , dLen = self._digits.length
       ;
-      window.draw(t, v);
       var digit, d = 0, frac, empty;
 
-      self._value = v;
+      if(!f_ && v < 16000){
+        f_ = true;
+      }
+
+      log.push(loge = {
+        _00_time: t,
+        _01_value: self._value,
+        _02_speed: self._speed,
+        _03_percp: self._perceptibleDgt,
+        _04_dLen : dLen,
+        _05_oDgt : o.digits,
+        _06_trace: []
+      });
+      logt = loge._06_trace;
 
       while(d < self._perceptibleDgt && (v >= 0.1 || d < o.digits || d < dLen)){
-        digit = self._digits[d++];
-        if(!digit) digit = self._addDigit();
+//        logt.push(loge = {
+//          _: "twnk",
+//          d: d,
+//          v0: v
+//        });
+
+        digit = self._digits[d++] || self._appendDigit(digit);
         digit.setValue(v);
         v = v/10;
+
+//        loge.v1 = v;
       }
 
       if(v >= 0.1 || d < o.digits || d < dLen){
         empty = v < 1 && d >= o.digits;
-        digit = self._digits[d++];
-        if(!digit) digit = self._addDigit();
-        frac = digit.setValue(v, empty);
-        v = Math.floor(v/10);
 
-        while(v > 0 || d < o.digits || d < dLen){
+        logt.push(loge = {
+          _: "perc",
+          d: d,
+          e: empty,
+          v0: v
+        });
+
+        digit = self._digits[d++] || self._appendDigit(digit);
+        frac = digit.setValue(v, empty);
+        v = v/10;
+
+        loge.fr = frac;
+//        loge.v1 = v;
+
+        while(v >= 0.1 || d < o.digits || d < dLen){
           empty = v < 1 && d >= o.digits;
 
-          digit = self._digits[d++];
-          if(!digit) digit = self._addDigit();
-          frac = digit.runToValue(v + frac, empty);
-          v = Math.floor(v/10);
+          if(loge._ == "perc") logt.push(loge = {
+            d: d,
+            e: empty,
+            v0: v
+          });
+
+          digit = self._digits[d++] || self._appendDigit(digit);
+          frac = digit.nearest(v, frac, empty);
+          v = v/10;
+
+          if(!loge._){
+            loge.fr = frac;
+            loge._ = "slow"
+          }
         }
       }
 
@@ -427,26 +428,43 @@
     , digit = this._digits[--d]
     ;
 
-    if(!digit.empty) return;
+    if(!digit.empty){
+      this._digits.forEach(function(digit){
+        digit.isNew = null;
+      });
+      return;
+    }
 
     do {
-      digit.remove();
+      digit.remove(digit.isNew);
       digit = this._digits[--d];
       this._intDigits--;
     } while(digit.empty);
 
     this._digits.length = d + 1;
-  }
+    this._digits.forEach(function(digit){
+      digit.isNew = null;
+    });
+  };
 
   Mecntr.prototype._elapsed = function(){
     return Date.now() - this._startTime;
-  }
+  };
 
-  function Digit(owner, sep){
+  //************************************
+  //            Digit Class
+  //   (helper for MechanicalCounter)
+  //************************************
+
+  function Digit(owner, dirDigit, sep){
     this.owner = owner;
+    this._dirDigit = dirDigit;
     var o = this.owner._opts;
 
-    if(sep) this.$sep = $(owner._thousandSepStr).prependTo(owner.$el);
+    if(sep){
+      this.$sep = $(owner._thousandSepStr).prependTo(owner.$el);
+    }
+
     this.$el = $(owner._digitStr).prependTo(owner.$el);
     this.$el.html(owner._makeSpan("rect", "0") + repeatStr(2, owner._makeSpan("card", "")));
 
@@ -463,74 +481,191 @@
       opacity: 1
     }, this._showMs);
 
-    var $cards = this.$el.find("." +owner._opts.baseClass + "-card");
+    var $cards = this.$el.find("." +o.baseClass + "-card");
     this.$card0 = $cards.eq(0);
     this.$card1 = $cards.eq(1);
-  }
 
-  Digit.prototype.remove = function(aniDelayMs){
+    this._state = this.STATE_LINKED;
+  };
+
+  Digit.prototype.STATE_LINKED  = 0;
+  Digit.prototype.STATE_LINKING = 1;
+  Digit.prototype.STATE_FREE    = 2;
+
+  Digit.prototype.remove = function(immediate){
+
+    if(immediate) return this.$all.remove();
+
     var self = this;
 
-    if(aniDelayMs == null) aniDelayMs = this._showMs;
-    if(aniDelayMs){
-      aniDelayMs = Math.floor(aniDelayMs/2);
-      self.$all.animate({
-        opacity:0.01
-      }, aniDelayMs).hide(aniDelayMs,function(){
-        self.$all.remove();
-      });
-    }else{
+    self.$all.stop(true).animate({
+      opacity:0.01
+    }, this._showMs).hide(this._showMs,function(){
       self.$all.remove();
-    }
-  }
-
-  Digit.prototype.runToValue = function(value, empty){
-    if(value === this._value) return this._frac;
-
-    var dif = value - this._value;
-
-    if(Math.abs(dif) > this._refreshRate){
-
-      value = this._value + this._refreshRate * (dif > 0 ? 1 : -1);
-
-    }
-
-    return this.setValue(value, empty);
+    });
 
   };
 
-  Digit.prototype.setValue = function(value, empty){
-    if(value === this._value) return this._frac;
+  Digit.prototype.setFinal = function(sgn, fl, frac){
+    this._sgn = sgn;
+    this._final = {
+      v: fl + frac,
+      fl: fl,
+      frac: frac,
+      nextFrac: fl % 10 === 9 ? frac : 0
+    };
+    this._final.sgnV = sgn * this._final.v
+    return this;
+  };
 
+  Digit.prototype.nearest = function(value, frac, empty){
+
+    this._oldVal = this._value;
+
+    var sgn = this._sgn;
+
+    if(sgn * value > this._final.sgnV){
+      value = this._final.v;
+    }
+
+    //if(value === this._value) return this._fracNext;
     this._value = value;
-    var floor = Math.floor(value);
-    var newDigit = this._floor !== floor
 
-    if(newDigit) this._floor = floor;
+    if(sgn < 0){
+      if(value > this._oldVisVal) value = this._oldVisVal;
+    }else{
+      if(value < this._oldVisVal) value = this._oldVisVal;
+    }
 
-    value -= floor;
-    var shift0 = value * this.owner._height;
+    var floor = Math.floor(value)
+    , flDgt = floor % 10
+    , isChange = this._floor !== floor
+    , frac2 = value - floor
+    ;
+
+    if(isChange) this._floor = floor;
+
+    if(this._state === this.STATE_FREE){
+      this._state = this.STATE_LINKING;
+    }
+
+    if(this._state === this.STATE_LINKING){
+      if(isChange || (frac2 * 10 >= 9)){
+        this._state = this.STATE_LINKED;
+      }
+    }
+
+    if(sgn < 0){
+
+      if(this._oldVisVal === floor + frac) frac *= 0.9;
+
+    } else if(this._state === this.STATE_LINKING){
+
+      frac = frac2;
+
+    }
+
+    var shift0 = frac * this.owner._height;
     var shift1 = shift0 - this.owner._height;
 
     this.$card0.css("top", shift0 + "px");
     this.$card1.css("top", shift1 + "px");
 
-    floor %= 10;
-    if(newDigit){
+    if(isChange){
       var zero = empty ? "" : "0";
-      this.$card0.text(floor === 0 ? zero : floor);
-      this.$card1.text(floor === 9 ? zero : floor + 1);
+      this.$card0.text(flDgt === 0 ? zero : flDgt);
+      this.$card1.text(flDgt === 9 ? zero : flDgt + 1);
     }
-    this._frac = floor !== 9 ? 0 : value;
-    this.empty = floor === 0 && value < 0.3 && empty;
-    return this._frac;
+    this._frac = frac;
+    this._fracNext = flDgt !== 9 ? 0 : frac;
+    this._oldVisVal = floor + frac;
+
+    this.empty = flDgt === 0 && frac < 0.3 && empty;
+    return this._fracNext;
+  };
+
+  Digit.prototype.setValue = function(value, empty){
+
+    this._oldVal = this._value;
+    this._state = this.STATE_FREE;
+
+    var sgn = this._sgn;
+
+    if(this._final && sgn * value > this._final.sgnV){
+      value = this._final.v;
+    }
+
+    if(value === this._value) return this._fracNext;
+    this._value = value;
+
+    if(sgn < 0){
+      if(value > this._oldVisVal) value = this._oldVisVal;
+    }else{
+      if(value < this._oldVisVal) value = this._oldVisVal;
+    }
+
+    var floor = Math.floor(value)
+    , flDgt = floor % 10
+    , isChange = this._floor !== floor
+    , frac = value - floor
+    ;
+
+    if(isChange) this._floor = floor;
+
+    var shift0 = frac * this.owner._height;
+    var shift1 = shift0 - this.owner._height;
+
+    this.$card0.css("top", shift0 + "px");
+    this.$card1.css("top", shift1 + "px");
+
+    if(isChange){
+      var zero = empty ? "" : "0";
+      this.$card0.text(flDgt === 0 ? zero : flDgt);
+      this.$card1.text(flDgt === 9 ? zero : flDgt + 1);
+    }
+    this._frac = frac;
+    this._fracNext = flDgt !== 9 ? 0 : frac;
+    this._oldVisVal = floor + frac;
+
+    this.empty = flDgt === 0 && frac < 0.3 && empty;
+    return this._fracNext;
+  };
+
+  Digit.prototype.setVisValue = function(value, empty){
+    this._oldVal = this._value;
+
+    if(value === this._value) return this._fracNext;
+    this._value = value;
+    this._floor = Math.floor(value);
+
+    var flDgt = this._floor % 10
+    , frac = value - this._floor
+    ;
+
+    var shift0 = frac * this.owner._height;
+    var shift1 = shift0 - this.owner._height;
+
+    this.$card0.css("top", shift0 + "px");
+    this.$card1.css("top", shift1 + "px");
+
+    var zero = empty ? "" : "0";
+    this.$card0.text(flDgt === 0 ? zero : flDgt);
+    this.$card1.text(flDgt === 9 ? zero : flDgt + 1);
+
+    this._frac = frac;
+    this._fracNext = flDgt !== 9 ? 0 : frac;
+    this._oldVisVal = value;
+
+    this.empty = flDgt === 0 && frac < 0.3 && empty;
+    return this._fracNext;
   };
 
   Digit.prototype.setIntValue = function(value, empty){
+    this._oldVal = this._value;
+
     if(value === this._value) return 0;
 
     this._value = this._floor = value;
-    this._frac = 0;
 
     var shift1 = -this.owner._height;
 
@@ -538,8 +673,18 @@
     var zero = empty ? "" : "0";
     this.$card0.css("top",         "0px").text(value === 0 ? zero : value);
     this.$card1.css("top", shift1 + "px").text(value === 9 ? zero : value + 1);
+
+    this._frac = 0;
+    this._fracNext = 0;
+    this._oldVisVal = value;
+
     this.empty = value === 0 && empty;
     return 0;
+  };
+
+  Digit.prototype.setNew = function(){
+    this.isNew = true;
+    return this;
   };
 
 })(jQuery);
