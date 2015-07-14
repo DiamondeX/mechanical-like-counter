@@ -67,7 +67,7 @@
       slowdownMs: 19000,
       perceptibleChangeMs: 600,
       refreshDelayMs: 30,
-      resetDelayMs: 1500,
+      resetDelayMs: 2500,
       onBeforeSpin: function(delayMs, valueDelta, startValue){},
       onSpinStep: function(timeFromStartMs, currentValue){}
     }, opts);
@@ -92,6 +92,7 @@
           writable: true,
           enumerable: true
         });
+        return h;
       }
     });
     //this._height = this.$el.height();
@@ -175,7 +176,7 @@
     var digit, d = 1, frac, empty;
 
     this._value = v;
-    frac = this._digits[0].setValue(v);
+    frac = this._digits[0].setVisValue(v);
     v = Math.floor(v * 0.1);
 
     while(v > 0 || d < o.digits || d < dLen){
@@ -279,7 +280,7 @@
 
     }
 
-    cb(t1, t2, k, spN);
+    cb(t1, t2, k, lgSpeed(t2, k));
 
   };
 
@@ -320,7 +321,7 @@
     ;
 
     this._calcSlowdownParams(aDif, delay, function (t1_, t2_, k_, spN_){
-      t1 = t1_; t2 = t2_; k = k_; spN_ = spN;
+      t1 = t1_; t2 = t2_; k = k_; spN = spN_;
     });
 
     this._startTime = Date.now();
@@ -331,9 +332,11 @@
       var t = timeMs * 0.001;
 
       if(t <= t1){
+        console.log("curVal: linear");
         self._value = oldVal + sgn * spN * t;
         return;
       }
+      console.log("curVal: logarithmic");
       t -= t1;
 
       spN = lgSpeed(t2 - t, k);
@@ -347,8 +350,10 @@
     clearInterval(self._interval);
 
     o.onBeforeSpin(delayMs, dif, oldVal);
-    self._interval = setInterval(function(){
+
+    self._dbgStep = function(){
       var t = self._elapsed();
+      console.log("_________\ndbgStep: t=", t);
 
       if(t >= delayMs){
         clearInterval(self._interval);
@@ -358,6 +363,13 @@
 
       self._currentValues(t);
       o.onSpinStep(t, self._value);
+      console.log("perc=", self._perceptibleDgt);
+
+      if(0){
+        //console.log(self._value);
+        self._fillValue(self._value);
+        return;
+      }
 
       var v = self._value
       , dLen = self._digits.length
@@ -367,7 +379,7 @@
       while(d < self._perceptibleDgt && (v >= 0.1 || d < o.digits || d < dLen)){
 
         digit = self._digits[d++] || self._appendDigit(digit);
-        digit.setValue(v);
+        digit.setVisValue(v);
         v = v * 0.1;
 
       }
@@ -376,7 +388,7 @@
         empty = v < 1 && d >= o.digits;
 
         digit = self._digits[d++] || self._appendDigit(digit);
-        frac = digit.setValue(v, empty);
+        frac = digit.setVisValue(v, empty);
         v = v * 0.1;
 
         while(v >= 0.1 || d < o.digits || d < dLen){
@@ -390,21 +402,25 @@
 
       self.dropEmptyDigits();
 
-    }, o.refreshDelayMs);
+    }
+    if(!this._dbgMode){
+      self._interval = setInterval(self._dbgStep, o.refreshDelayMs);
+    }else{
+      self._dbgTime = 0;
+      console.log("now use 'debug step'!");
+    }
 
   };
 
-  Mecntr.prototype.resetValue = function(newVal, delayMs){
-    this._resetValue(newVal * this._opts.multiplier, delayMs);
+  Mecntr.prototype.resetValue = function(newVal){
+    this._resetValue(newVal * this._opts.multiplier);
   };
 
-  Mecntr.prototype._resetValue = function(newVal, delayMs){
+  Mecntr.prototype._resetValue = function(newVal){
 
     var o = this._opts;
 
-    if(delayMs == null) delayMs = o.resetDelayMs;
-
-    if(!delayMs || this._value === newVal){
+    if(this._value === newVal){
       clearInterval(this._interval);
       this._isResetInProgress = null;
       this._fillValue(newVal);
@@ -415,6 +431,7 @@
 
     var self = this
     , oldVal = this._value
+    , delayMs = o.resetDelayMs
     , delay = delayMs * 0.001
     , dLen = self._digits.length
     , maxDif = 0
@@ -446,6 +463,8 @@
         if(dif > maxDif) maxDif = dif;
         v = Math.floor(v * 0.1);
       }
+      delay = delay * 0.1 * maxDif;
+      delayMs = delayMs * 0.1 * maxDif;
 
       while(v > 0){
         digit = self._addDigit(digit);
@@ -465,7 +484,6 @@
 
     (function(){
       var d = 0
-      , spN = lgSpeed(t2, k)
       , v2 = lgValueBySpeed(spN, k)
       ;
 
@@ -527,6 +545,11 @@
   };
 
   Mecntr.prototype._elapsed = function(){
+    if(this._dbgMode){
+      this._dbgTime += this._opts.refreshDelayMs;
+      return this._dbgTime;
+    }
+
     return Date.now() - this._startTime;
   };
 
@@ -790,7 +813,6 @@
   Digit.prototype.setVisValue = function(value, empty){
     this._oldVal = this._value;
 
-    if(value === this._value) return this._fracNext;
     this._value = value;
     this._floor = Math.floor(value);
 
@@ -818,8 +840,6 @@
 
   Digit.prototype.setIntValue = function(value, empty){
     this._oldVal = this._value;
-
-    if(value === this._value) return 0;
 
     this._value = this._floor = value;
 

@@ -45,8 +45,12 @@
     <button id="btn3">7f</button>
     <button id="btn4">8m</button>
     <button id="btn5">9m</button>
+    <button id="btnStep">debug step</button>
+    <button id="btnMode">switch debug mode</button>
+<!--
     <button id="btnS">s</button>
     <button id="btnF">f</button>
+-->
     <br>
     <span id="someValue" class="bg-success">234.00</span>
     <br>
@@ -192,6 +196,7 @@ $(function(){
         $("#debug").text("t:"+t + ", v:" +v+", x:"+x+", y: "+y);
       }
     });
+    cntr._dbgMode = true;
 
     $("#btn_").click(function(){
       console.log("sp, val: ", cntr._speed, cntr._value);
@@ -234,6 +239,16 @@ $(function(){
 
       $("<div>").text("Знач: "+dif+", время(мс): "+time).appendTo("#list").click(run);
       run();
+    });
+
+    function step(){
+      if(cntr._dbgStep) cntr._dbgStep();
+    }
+    $("#btnStep").keydown(step).click(step);
+
+    $("#btnMode").click(function(){
+      cntr._dbgMode = !cntr._dbgMode;
+      console.log("dbgMode now is "+(cntr._dbgMode ? "on" : "off"));
     });
 
     function deltaByKeyCode(code){
@@ -304,19 +319,26 @@ $(function(){
       });
 
       $cntrBlock.find(".app-btn-go").click(function(){
-        var value = $cntrBlock.find(".app-inp-value").val();
-        var delay = $cntrBlock.find(".app-inp-delay").val();
+        //value = $cntrBlock.find(".app-inp-value").val();
+        //delay = $cntrBlock.find(".app-inp-delay").val();
         cntr.setValue(value, delay);
       });
 
+      $cntrBlock.find(".app-inp-value").change(function(){
+        value = $(this).val();
+      })
+
+      $cntrBlock.find(".app-inp-delay").change(function(){
+        delay = $(this).val();
+      })
+
       $cntrBlock.find(".app-btn-reset").click(function(){
-        var delay = $cntrBlock.find(".app-inp-delay").val();
-        cntr.resetValue(resetValue, delay);
+        cntr.resetValue(resetValue);
       });
 
     }
 
-    var i = 7;
+    var i = 1;
     while(i--){
       addCntr();
     }
