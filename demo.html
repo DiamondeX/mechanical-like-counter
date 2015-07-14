@@ -2,72 +2,187 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta content="IE=edge" http-equiv="X-UA-Compatible">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
   <title>Document</title>
+  <link rel="stylesheet" href="node_modules\bootstrap\dist\css\bootstrap.min.css">
+  <link rel="stylesheet" href="mechounter.css">
   <script type="text/javascript" src="jquery-1.11.2.min.js"></script>
   <script type="text/javascript" src="mechounter.js"></script>
-  <link rel="stylesheet" href="mechounter.css">
 </head>
 <body>
-  <style>
-    #list {
-      position: absolute;
-      width: 300px;
-      top: 0;
-      left: 650px;
-      background: #efd;
-      border: solid 1px #dfb;
-      border-radius: 5px;
-      padding: 0 6px;
+  <button id="switch" class="btn btn-default btn-xs">Переключиться</button>
+  <div id="develop">
+    <style>
+      #list {
+        position: absolute;
+        width: 300px;
+        top: 0;
+        left: 650px;
+        background: #efd;
+        border: solid 1px #dfb;
+        border-radius: 5px;
+        padding: 0 6px;
+      }
+      #list > div {
+        border: solid 1px #dfb;
+        border-radius: 3px;
+        margin: 4px 0;
+        padding: 2px 6px;
+        cursor: pointer;
+      }
+      button{
+        cursor: pointer;
+      }
+    </style>
+
+    <br>
+    <button id="btn_">?</button>
+    <button id="btn0">1s</button>
+    <button id="btnM">1m</button>
+    <button id="btn1">1f</button>
+    <button id="btn2">7s</button>
+    <button id="btn3">7f</button>
+    <button id="btn4">8m</button>
+    <button id="btn5">9m</button>
+    <button id="btnS">s</button>
+    <button id="btnF">f</button>
+    <br>
+    <span id="someValue" class="bg-success">234.00</span>
+    <br>
+    <span id="debug"></span>
+    <br>
+    <span id="debug2"></span>
+
+    <br><input id="difVal" type="number" min="0" max="100000000" value="175905" placeholder="Новое значение" title="Новое значение" style="width: 170px"/>
+    <br><input id="time" type="number" min="0" max="20000" value="5000" placeholder="Интервал в меллисекундах" title="Интервал в меллисекундах" style="width: 170px"/>
+    <br><button id="btnGo">go!</button>
+    <div id='graph' style='position:absolute; width: 400px; height: 400px; background: #fde; top: 0; left: 200px; z-index: -1'></div>
+    <div id='list'></div>
+  </div>
+  <div id="examine" hidden class="container">
+    <div class="row page-header">
+
+      <div class="col-sm-6 col-md-8 col-lg-9">
+
+        <button id="addCntr" class="btn btn-default" title="Добавить счетчик"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Добавить</button>
+
+        &nbsp;&nbsp;
+
+        <div class="btn-group" role="group" aria-label="...">
+          <a class="app-btn-add__001 btn btn-default" href="#" role="button">+0.01</a>
+          <a class="app-btn-add__01_ btn btn-default" href="#" role="button">+0.1</a>
+          <a class="app-btn-add__1__ btn btn-default" href="#" role="button">+1</a>
+          <a class="app-btn-add_10__ btn btn-default" href="#" role="button">+10</a>
+        </div>
+
+        <button type="button" class="app-btn-go btn btn-primary"><span class="glyphicon glyphicon-play" aria-hidden="true"></span> Пуск!</button>
+
+      </div>
+
+      <div class="col-sm-6 col-md-4 col-lg-3">
+
+        <div class="input-group has-error">
+          <span class="input-group-btn">
+            <button type="button" class="app-btn-reset btn btn-danger"><span class="glyphicon glyphicon-repeat" aria-hidden="true"></span> Сбросить до</button>
+          </span>
+          <input class="app-inp-reset form-control" type="number" min="0" max="100000000" value="175" placeholder="Значение сброса" title="Значение сброса"/>
+          <div class="input-group-addon">ед</div>
+        </div><!-- /input-group -->
+
+      </div>
+
+    </div>
+
+    <div id="cntrs" class="row">
+
+    </div>
+
+    <template id="cntrBlock" class="hidden">
+      <div class="col-xs-6 col-sm-4 col-md-3 col-lg-2">
+
+        <div class="panel panel-default">
+
+          <div class="panel-heading clearfix">
+            <button type="button" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          </div>
+          <div class="panel-body">
+
+            <div class="text-center bg-success">
+
+              <span class="counter">123.55</span>
+
+            </div>
+
+          </div>
+
+          <div class="btn-group btn-group-justified" role="group" aria-label="...">
+            <a class="app-btn-add__001 btn btn-default btn-xs" href="#" role="button">+0.01</a>
+            <a class="app-btn-add__01_ btn btn-default btn-xs" href="#" role="button">+0.1</a>
+            <a class="app-btn-add__1__ btn btn-default btn-xs" href="#" role="button">+1</a>
+            <a class="app-btn-add_10__ btn btn-default btn-xs" href="#" role="button">+10</a>
+          </div>
+
+          <div class="input-group">
+            <input class="app-inp-value form-control input-sm" type="number" min="0" max="100000000" value="2016" placeholder="Новое значение" title="Новое значение"/>
+            <div class="input-group-addon">ед</div>
+          </div>
+          <div class="input-group">
+            <input class="app-inp-delay form-control input-sm" type="number" min="0" max="20000" value="5000" placeholder="Интервал в меллисекундах" title="Интервал в меллисекундах"/>
+            <div class="input-group-addon">мс</div>
+          </div>
+
+          <button type="button" class="app-btn-go btn btn-primary btn-block"><span class="glyphicon glyphicon-play" aria-hidden="true"></span> Пуск!</button>
+          <div class="app-btn-reset hidden"></div>
+
+        </div>
+
+      </div>
+    </template>
+  </div>
+  <div class="hidden">
+    <script>
+$(function(){
+
+  $("#switch").click(function(){
+    $("#examine").toggle();
+    $("#develop").toggle();
+  });
+
+  //development block
+  (function (){
+
+    window.ani = function (delayMs){
+      var start = Date.now();
+      var dgt = window.cntr._digits[0];
+      var v = dgt.$card0.text() % 10;
+      var interv = setInterval(function(){
+        var elapsed = Date.now() - start;
+        if(elapsed > delayMs){
+          dgt.setValue(v + 1);
+          clearInterval(interv);
+          return;
+        }
+        var part = elapsed / delayMs;
+        dgt.setValue(v+part);
+      }, 5);
     }
-    #list > div {
-      border: solid 1px #dfb;
-      border-radius: 3px;
-      margin: 4px 0;
-      padding: 2px 6px;
-      cursor: pointer;
-    }
-    button{
-      cursor: pointer;
-    }
-  </style>
-  <button id="btn_">?</button>
-  <button id="btn0">1s</button>
-  <button id="btnM">1m</button>
-  <button id="btn1">1f</button>
-  <button id="btn2">7s</button>
-  <button id="btn3">7f</button>
-  <button id="btn4">8m</button>
-  <button id="btn5">9m</button>
-  <button id="btnS">s</button>
-  <button id="btnF">f</button>
-  <br>
-  <span id="someValue">234.00</span>
-  <br>
-  <span id="debug"></span>
-  <br>
-  <span id="debug2"></span>
 
-  <br><input id="difVal" type="number" min="0" max="100000000" value="175905" placeholder="Новое значение" title="Новое значение" style="width: 170px"/>
-  <br><input id="time" type="number" min="0" max="20000" value="5000" placeholder="Интервал в меллисекундах" title="Интервал в меллисекундах" style="width: 170px"/>
-  <br><button id="btnGo">go!</button>
+    var dt, dv, v0, lx;
+    $g = $("#graph");
 
-
-  <script>
-    $(function(){
-
-      var dt, dv, v0, lx;
-      $g = $("#graph");
-
-      window.initDraw = function(dt_, dv_, v0_){
+    var cntr = window.cntr = new MechanicalCounter($("#someValue"), {
+      mask: "`7,2",
+      value: 345.89,
+      onBeforeSpin: function(dt_, dv_, v0_){
         lx = -10;
         dt = dt_;
         dv = dv_;
         v0 = v0_;
         $g.html("");
         $("#debug2").text("dt:"+dt + ", dv:" +dv+", v0:"+v0);
-      };
-
-      window.draw = function(t, v){
+      },
+      onSpinStep: function(t, v){
         var x = t/dt * 400;
         if(x == lx) return;
         lx = x;
@@ -75,93 +190,169 @@
         var y = 400 - (v-v0)/dv * 400;
         $g.append("<div style='position: absolute; top: " + y + "px; left: " + x + "px; width: 1px; height: 1px; background: red'/>");
         $("#debug").text("t:"+t + ", v:" +v+", x:"+x+", y: "+y);
+      }
+    });
+
+    $("#btn_").click(function(){
+      console.log("sp, val: ", cntr._speed, cntr._value);
+    });
+
+    $("#btn0").click(function(){
+      cntr.setValue(152.999, 20000);
+    });
+
+    $("#btnM").click(function(){
+      cntr.setValue(132.999, 4000);
+    });
+
+    $("#btn1").click(function(){
+      cntr.setValue(152.999, 2000);
+    });
+
+    $("#btn2").click(function(){
+      cntr.setValue(1500022.999, 20000);
+    });
+
+    $("#btn3").click(function(){
+      cntr.setValue(1500022.999, 2000);
+    });
+
+    $("#btn4").click(function(){
+      cntr.setValue(1503089.555, 5000);
+    });
+
+    $("#btn5").click(function(){
+      cntr.setValue(1506067.777, 5000);
+    });
+
+    $("#btnGo").click(function(){
+      var dif = +$("#difVal").val();
+      var time = +$("#time").val();
+      function run(){
+        cntr.setValue(dif, time);
       };
 
-      window.ani = function (delayMs){
-        var start = Date.now();
-        var dgt = window.cntr._digits[0];
-        var v = dgt.$card0.text() % 10;
-        var interv = setInterval(function(){
-          var elapsed = Date.now() - start;
-          if(elapsed > delayMs){
-            dgt.setValue(v + 1);
-            clearInterval(interv);
-            return;
-          }
-          var part = elapsed / delayMs;
-          dgt.setValue(v+part);
-        }, 5);
-      }
-
-      var cntr = window.cntr = new MechanicalCounter($("#someValue"), {
-        mask: "`7,2",
-        value: 345.89
-      });
-
-      $("#btn_").click(function(){
-        console.log("sp, val: ", cntr._speed, cntr._value);
-      });
-
-      $("#btn0").click(function(){
-        cntr.setValue(152.999, 20000);
-      });
-
-      $("#btnM").click(function(){
-        cntr.setValue(132.999, 4000);
-      });
-
-      $("#btn1").click(function(){
-        cntr.setValue(152.999, 2000);
-      });
-
-      $("#btn2").click(function(){
-        cntr.setValue(1500022.999, 20000);
-      });
-
-      $("#btn3").click(function(){
-        cntr.setValue(1500022.999, 2000);
-      });
-
-      $("#btn4").click(function(){
-        cntr.setValue(1503089.555, 5000);
-      });
-
-      $("#btn5").click(function(){
-        cntr.setValue(1506067.777, 5000);
-      });
-
-      $("#btnGo").click(function(){
-        var dif = +$("#difVal").val();
-        var time = +$("#time").val();
-        function run(){
-          cntr.setValue(dif, time);
-        };
-
-        $("<div>").text("Знач: "+dif+", время(мс): "+time).appendTo("#list").click(run);
-        run();
-      });
-
-      function deltaByKeyCode(code){
-        switch(code) {
-          case 37: return -0.01;
-          case 38: return -0.10;
-          case 39: return +0.01;
-          case 40: return +0.10;
-        }
-        return 0;
-      }
-
-      $("#btnS").keydown(function(e){
-        cntr.spinValue(cntr._value + deltaByKeyCode(e.keyCode));
-      });
-
-      $("#btnF").keydown(function(e){
-        cntr.fillValue(cntr._value + deltaByKeyCode(e.keyCode));
-      });
-
+      $("<div>").text("Знач: "+dif+", время(мс): "+time).appendTo("#list").click(run);
+      run();
     });
-  </script>
-  <div id='graph' style='position:absolute; width: 400px; height: 400px; background: #fde; top: 0; left: 200px; z-index: -1'></div>
-  <div id='list'></div>
+
+    function deltaByKeyCode(code){
+      switch(code) {
+        case 37: return -0.01;
+        case 38: return -0.10;
+        case 39: return +0.01;
+        case 40: return +0.10;
+      }
+      return 0;
+    }
+
+    $("#btnS").keydown(function(e){
+      cntr.spinValue(cntr._value + deltaByKeyCode(e.keyCode));
+    });
+
+    $("#btnF").keydown(function(e){
+      cntr.fillValue(cntr._value + deltaByKeyCode(e.keyCode));
+    });
+
+  })();
+
+  //examine block
+  (function(){
+
+    var allCntrs = window.allCntrs = [];
+    var resetValue;
+
+    function addCntr(){
+
+      var cntr, value = 2016, delay = 5000;
+
+      var $cntrBlock = $($("#cntrBlock").html()).prependTo("#cntrs").hide().fadeIn(1000, function(){
+        cntr = new MechanicalCounter($cntrBlock.find(".counter"), {
+          mask: "`7,2",
+          value: 345.89
+        });
+
+        allCntrs.push(cntr);
+
+      });
+
+      $cntrBlock.find(".close").click(function(){
+        $(this).off("click").click(destroy);
+        $cntrBlock.stop(true).fadeOut(1000, destroy);
+
+        function destroy(){
+          allCntrs.splice(allCntrs.indexOf(cntr), 1);
+          $cntrBlock.remove();
+        }
+
+      });
+
+      $cntrBlock.find(".app-btn-add__001").click(function(){
+        cntr.setValue(cntr.getValue() + 0.01, delay);
+      });
+
+      $cntrBlock.find(".app-btn-add__01_").click(function(){
+        cntr.setValue(cntr.getValue() + 0.1, delay);
+      });
+
+      $cntrBlock.find(".app-btn-add__1__").click(function(){
+        cntr.setValue(cntr.getValue() + 1, delay);
+      });
+
+      $cntrBlock.find(".app-btn-add_10__").click(function(){
+        cntr.setValue(cntr.getValue() + 10, delay);
+      });
+
+      $cntrBlock.find(".app-btn-go").click(function(){
+        var value = $cntrBlock.find(".app-inp-value").val();
+        var delay = $cntrBlock.find(".app-inp-delay").val();
+        cntr.setValue(value, delay);
+      });
+
+      $cntrBlock.find(".app-btn-reset").click(function(){
+        var delay = $cntrBlock.find(".app-inp-delay").val();
+        cntr.resetValue(resetValue, delay);
+      });
+
+    }
+
+    var i = 7;
+    while(i--){
+      addCntr();
+    }
+
+    $("#addCntr").click(addCntr);
+
+    $(".page-header .app-btn-add__001").click(function(){
+      $("#cntrs .app-btn-add__001").click();
+    });
+
+    $(".page-header .app-btn-add__001").click(function(){
+      $("#cntrs .app-btn-add__001").click();
+    });
+
+    $(".page-header .app-btn-add__1__").click(function(){
+      $("#cntrs .app-btn-add__1__").click();
+    });
+
+    $(".page-header .app-btn-add_10__").click(function(){
+      $("#cntrs .app-btn-add_10__").click();
+    });
+
+    $(".page-header .app-btn-go").click(function(){
+      $("#cntrs .app-btn-go").click();
+    });
+
+    $(".page-header .app-btn-reset").click(function(){
+      resetValue = $(".page-header .app-inp-reset").val();
+      $("#cntrs .app-btn-reset").click();
+    });
+
+  })();
+
+});
+    </script>
+  </div>
+
   </body>
 </html>

@@ -3,7 +3,6 @@
   vertical-align: middle;
   overflow: hidden;
   white-space: nowrap;
-  background: #def;
 }
 .mechounter:after {
   content: ".";
