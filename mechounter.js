@@ -1,8 +1,5 @@
 (function($){
 
-  var dbgLog, adgd, dgp, dgd;
-
-  //var PiD4 = 0.7853981633974483; // === Math.Pi / 4;
   var toLog10 = 0.4342944819032518; // === 1 / Math.log(10)
   var frLog10 = 2.302585092994046;  // === Math.log(10)
 
@@ -64,10 +61,9 @@
       value: 0,
       baseClass: "mechounter",
       showDigitMs: 300,
-      slowdownMs: 19000,
-      perceptibleChangeMs: 600,
       refreshDelayMs: 30,
       resetDelayMs: 2500,
+      perceptibleShift: 0.2,
       onBeforeSpin: function(delayMs, valueDelta, startValue){},
       onSpinStep: function(timeFromStartMs, currentValue){}
     }, opts);
@@ -95,7 +91,6 @@
         return h;
       }
     });
-    //this._height = this.$el.height();
     this._digits = [];
 
     this._initDom();
@@ -258,30 +253,10 @@
 
   };
 
-  Mecntr.prototype._getUpdateValueBuilder = function(oV, nV){
-    var d = 0
-    , oFl = Math.floor(oV)
-    , nFl = Math.floor(nV)
-    , oFr = oV - oFl
-    , nFr = nV - nFl
-    ;
-
-    return function(digit){
-      digit.createValueUpdaterForSet(oV, nV);
-      oFr = oFl % 10 === 9 ? oFr : 0;
-      oFl = Math.floor(oFl * 0.1);
-      oV = oFl + oFr;
-      nFr = nFl % 10 === 9 ? nFr : 0;
-      nFl = Math.floor(nFl * 0.1);
-      nV = nFl + nFr;
-      return digit;
-    }
-
-  }
-
   Mecntr.prototype._setSpeed = function(spN){
+    var o = this._opts;
     this._speed = spN * 0.001;
-    this._perceptibleDgt = toLog10 * Math.log(this._speed * this._opts.multiplier);
+    this._perceptibleDgt = toLog10 * Math.log(this._speed * o.multiplier) - o.perceptibleShift;
   };
 
   Mecntr.prototype.getValue = function(){
@@ -289,6 +264,9 @@
   }
 
   Mecntr.prototype.setValue = function(newVal, delayMs){
+    this._setValue(newVal * this._opts.multiplier, delayMs);
+
+    return;
     newVal *= this._opts.multiplier;
 
     if(!delayMs || this._value === newVal){
@@ -302,6 +280,20 @@
   };
 
   Mecntr.prototype._setValue = function(newVal, delayMs){
+
+    if(this._isResetInProgress){
+      this._onResetDone = function(){
+        this._setValue(newVal, delayMs);
+      };
+      return;
+    }
+
+    if(!delayMs || this._value === newVal){
+      clearInterval(self._interval);
+      this._fillValue(newVal);
+      return;
+    }
+
     var self = this
     , o = this._opts
     , oldVal = this._value
@@ -342,9 +334,7 @@
       if(sgn * self._value < sgn * oldVal){
         self._value = oldVal;
       }
-    }
-
-    //this._buildValueUpdater = this._getUpdateValueBuilder(oldVal, newVal);
+    };
 
     (function(){
       var d = 0
@@ -424,6 +414,8 @@
         }
       }
 
+      self.dropEmptyDigits();
+
     }
     if(!this._dbgMode){
       self._interval = setInterval(self._dbgStep, o.refreshDelayMs);
@@ -446,6 +438,10 @@
       clearInterval(this._interval);
       this._isResetInProgress = null;
       this._fillValue(newVal);
+      if(this._onResetDone){
+        this._onResetDone();
+        this._onResetDone = null;
+      }
       return;
     }
 
@@ -463,11 +459,6 @@
     , spN  // initial spin speed (rounds of dif per second)
     ;
 
-    dbgLog = window.dbgLog = {
-      adgd: []
-    };
-    adgd = dbgLog.adgd;
-
     (function(v){
       var dif
       , d = 0
@@ -475,11 +466,6 @@
       ;
 
       while(d < dLen){
-        adgd.push({
-          d: d,
-          dgd: []
-        });
-        dgp = adgd[d];
         digit = self._digits[d++];
         dif = digit.prepareValueIntervalForReset(v);
         if(dif > maxDif) maxDif = dif;
@@ -499,18 +485,12 @@
       t1 = t1_; t2 = t2_; k = k_; spN = spN_;
     });
 
-    dbgLog.t1 = t1;
-    dbgLog.t2 = t2;
-    dbgLog.k = k;
-    dbgLog.spN = spN;
-
     (function(){
       var d = 0
       , v2 = lgValueBySpeed(spN, k)
       ;
 
       while(d < dLen){
-        dgp = adgd[d];
         self._digits[d++].createValueUpdaterForReset(k, t2, spN, v2);
       }
 
@@ -533,8 +513,6 @@
       t *= 0.001;
 
       while(d < dLen){
-        dgp = adgd[d];
-        dgd = dgp.dgd;
         self._digits[d++]._updateValue(t);
       }
 
@@ -547,23 +525,15 @@
     , digit = this._digits[--d]
     ;
 
-    if(!digit.empty){
-      this._digits.forEach(function(digit){
-        digit.isNew = null;
-      });
-      return;
-    }
+    if(!digit.wasted) return;
 
     do {
-      digit.remove(digit.isNew);
-      digit = this._digits[--d];
+      digit.remove();
       this._intDigits--;
-    } while(digit.empty);
 
-    this._digits.length = d + 1;
-    this._digits.forEach(function(digit){
-      digit.isNew = null;
-    });
+      digit = this._digits[--d];
+    } while(digit.wasted);
+
   };
 
   Mecntr.prototype._elapsed = function(){
@@ -594,27 +564,26 @@
 
     this.$all = this.$el.add(this.$sep);
     this._showMs = o.showDigitMs;
-    this._refreshRate = o.refreshDelayMs / o.perceptibleChangeMs;
     this._num = owner._digits.length;
     this.$all.animate({
       width: "toggle",
       opacity: 0.01
-    }, 0).animate({
-      width: "toggle"
-    }, this._showMs).animate({
-      opacity: 1
-    }, this._showMs);
+    }, 0);
 
     var $cards = this.$el.find("." +o.baseClass + "-card");
     this.$card0 = $cards.eq(0);
     this.$card1 = $cards.eq(1);
-
-    this._state = this.STATE_LINKED;
+    this.empty = true;
+    this.wasted = false;
   };
 
-  Digit.prototype.STATE_LINKED  = 0;
-  Digit.prototype.STATE_LINKING = 1;
-  Digit.prototype.STATE_FREE    = 2;
+  Digit.prototype.reveal = function(){
+    this.$all.animate({
+      width: "toggle"
+    }, this._showMs).animate({
+      opacity: 1
+    }, this._showMs);
+  };
 
   Digit.prototype.remove = function(immediate){
 
@@ -635,10 +604,6 @@
     this._dstVal = dstVal % 10;
     if(this._dstVal < this._srcVal) this._dstVal += 10;
     this._aDif = this._dstVal - this._srcVal;
-
-    dgp.src = this._srcVal;
-    dgp.dst = this._dstVal;
-    dgp.dif = this._aDif;
 
     return this._aDif;
   };
@@ -676,18 +641,20 @@
   };
 
   Digit.prototype.createValueUpdaterForSet = function(oldVisVal, newVisVal){
+    console.log("updater for digit#"+this._num+"..");
     if(oldVisVal === newVisVal) {
+      console.log("updater absent");
       this._updateValue = function(){ return 0; };
       return;
     }
 
     if(this._num === 0){
+      console.log("last digit updater");
       this._updateValue = function(value){ return this.setVisValue(value); };
       return;
     }
 
-    var maxPercDiff = this._num - this.owner._maxPerceptibleDgt;
-    var correction = 0;
+    var correction = oldVisVal < newVisVal ? -1 : 0;
     var limit;
 
     if(oldVisVal < newVisVal){
@@ -704,6 +671,23 @@
       };
     }
 
+    var maxPercDiff = this._num - this.owner._maxPerceptibleDgt;
+    if(maxPercDiff >= 1){
+      console.log("impulse updater");
+      this._updateValue = function(value, fracPrev, empty){
+
+        console.log("from=", oldVisVal, " to=", newVisVal, " maxPercDiff=", maxPercDiff);
+
+        var floor = Math.floor(value);
+
+        console.log("impulsive: fracPrev=", fracPrev);
+        console.log("val=", floor + fracPrev, " limited=", limit(floor + fracPrev));
+        return this.setVisValue(limit(floor + fracPrev), empty);
+      };
+      return;
+    }
+
+    console.log("mixed updater");
     this._updateValue = function(value, fracPrev, empty){
       var percDiff = this._num - this.owner._perceptibleDgt;
 
@@ -730,172 +714,7 @@
       console.log("impulsive: percDiff=", percDiff, " fracPrev=", fracPrev);
       console.log("val=", floor + fracPrev, " limited=", limit(floor + fracPrev));
       return this.setVisValue(limit(floor + fracPrev), empty);
-    }
-  };
-
-  Digit.prototype.updateValue = function(value, fracPrev, empty){
-
-    var percDiff = this._num - this.owner._perceptibleDgt;
-
-    if(percDiff < 1){
-      console.log("evenly: percDiff=", percDiff);
-      return this.setVisValue(value, empty);
-    }
-
-    var floor = Math.floor(value);
-    var frac, fracNow = value - floor;
-
-    if(percDiff < 2){
-      percDiff--;
-      frac = percDiff * fracPrev + (1 - percDiff) * fracNow;
-      console.log("halfevenly: percDiff=", percDiff, " fracNow=", fracNow, " fracPrev=", fracPrev, " frac=", frac);
-      return this.setVisValue(floor + frac, empty);
-    }
-
-    console.log("impulsive: percDiff=", percDiff, " fracPrev=", fracPrev, " frac=", frac);
-    return this.setVisValue(floor + fracPrev, empty);
-  }
-
-  Digit.prototype.setFinal = function(sgn, fl, frac){
-    this._state = this.STATE_LINKED;
-    this._sgn = sgn;
-    this._final = {
-      v: fl + frac,
-      fl: fl,
-      frac: frac,
-      nextFrac: fl % 10 === 9 ? frac : 0
     };
-    this._final.sgnV = sgn * this._final.v
-    return this;
-  };
-
-  Digit.prototype.nearest = function(value, frac, empty){
-
-    var percDiff = this._num - 1 - this.owner._perceptibleDgt;
-    var isGibrib = percDiff > 0 && percDiff < 1;
-    if(isGibrib) console.group("digit#"+this._num+": percDiff="+percDiff);
-
-    this._oldVal = this._value;
-
-    var sgn = this._sgn;
-
-    if(sgn * value > this._final.sgnV){
-      value = this._final.v;
-    }
-
-    //if(value === this._value) return this._fracNext;
-    this._value = value;
-
-    if(sgn < 0){
-      if(value > this._oldVisVal) value = this._oldVisVal;
-    }else{
-      if(value < this._oldVisVal) value = this._oldVisVal;
-    }
-
-    var floor = Math.floor(value)
-    , flDgt = floor % 10
-    , isChange = this._floor !== floor
-    , frac2 = value - floor
-    ;
-
-    if(isChange) this._floor = floor;
-
-    if(this._state === this.STATE_FREE){
-      this._state = this.STATE_LINKING;
-    }
-
-    if(this._state === this.STATE_LINKING){
-      if(isChange || (frac2 * 10 >= 9)){
-        this._state = this.STATE_LINKED;
-      }
-    }
-
-    if(sgn < 0){
-
-      if(floor + frac > this._oldVisVal){
-        frac = this._oldVisVal - Math.floor(this._oldVisVal);
-        if(floor !== this._oldVisVal - frac) console.error("er 23");
-      }
-      if(this._oldVisVal === floor + frac) frac *= 0.9;
-
-    } else {
-      if(floor + frac < this._oldVisVal){
-        frac = this._oldVisVal - Math.floor(this._oldVisVal);
-        if(floor !== this._oldVisVal - frac) console.error("er 24");
-      } else {
-        if(this._state === this.STATE_LINKING){
-
-          frac = frac2;
-
-        }
-      }
-    }
-
-    var shift0 = frac * this.owner._height;
-    var shift1 = shift0 - this.owner._height;
-
-    this.$card0.css("top", shift0 + "px");
-    this.$card1.css("top", shift1 + "px");
-
-    if(isChange){
-      var zero = empty ? "" : "0";
-      this.$card0.text(flDgt === 0 ? zero : flDgt);
-      this.$card1.text(flDgt === 9 ? zero : flDgt + 1);
-    }
-    this._frac = frac;
-    this._fracNext = flDgt !== 9 ? 0 : frac;
-    this._oldVisVal = floor + frac;
-
-    this.empty = flDgt === 0 && frac < 0.3 && empty;
-    console.groupEnd();
-    return this._fracNext;
-  };
-
-  Digit.prototype.setValue = function(value, empty){
-
-    this._oldVal = this._value;
-    this._state = this.STATE_FREE;
-
-    var sgn = this._sgn;
-
-    if(this._final && sgn * value > this._final.sgnV){
-      value = this._final.v;
-    }
-
-    if(value === this._value) return this._fracNext;
-    this._value = value;
-
-    if(sgn < 0){
-      if(value > this._oldVisVal) value = this._oldVisVal;
-    }else{
-      if(value < this._oldVisVal) value = this._oldVisVal;
-    }
-
-    var floor = Math.floor(value)
-    , flDgt = floor % 10
-    , isChange = this._floor !== floor
-    , frac = value - floor
-    ;
-
-    if(isChange) this._floor = floor;
-
-    var shift0 = frac * this.owner._height;
-    var shift1 = shift0 - this.owner._height;
-
-    this.$card0.css("top", shift0 + "px");
-    this.$card1.css("top", shift1 + "px");
-
-    if(isChange){
-      var zero = empty ? "" : "0";
-      this.$card0.text(flDgt === 0 ? zero : flDgt);
-      this.$card1.text(flDgt === 9 ? zero : flDgt + 1);
-    }
-    this._frac = frac;
-    this._fracNext = flDgt !== 9 ? 0 : frac;
-    this._oldVisVal = floor + frac;
-
-    this.empty = flDgt === 0 && frac < 0.3 && empty;
-    return this._fracNext;
   };
 
   Digit.prototype.setVisValue = function(value, empty){
@@ -922,13 +741,11 @@
     this._fracNext = flDgt !== 9 ? 0 : frac;
     this._oldVisVal = value;
 
-    this.empty = flDgt === 0 && frac < 0.3 && empty;
+    empty = flDgt === 0 && frac < 0.3 && empty;
+    if(!this.empty && empty) this.wasted = true;
+    if(this.empty && !empty) this.reveal();
+    this.empty = empty;
     return this._fracNext;
-  };
-
-  Digit.prototype.setNew = function(){
-    this.isNew = true;
-    return this;
   };
 
 })(jQuery);

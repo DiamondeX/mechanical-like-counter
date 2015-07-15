@@ -14,10 +14,24 @@
   <button id="switch" class="btn btn-default btn-xs">Переключиться</button>
   <div id="develop">
     <style>
+      #dbgDiv {
+        display: inline-block;
+        border: solid 1px darkred;
+        padding: 3px;
+      }
+      #graph {
+        position:absolute;
+        width: 400px;
+        height: 400px;
+        top: 5px;
+        left: 200px;
+        z-index: -1;
+        background: #fde;
+      }
       #list {
         position: absolute;
         width: 300px;
-        top: 0;
+        top: 5px;
         left: 650px;
         background: #efd;
         border: solid 1px #dfb;
@@ -36,22 +50,12 @@
       }
     </style>
 
-    <br>
-    <button id="btn_">?</button>
-    <button id="btn0">1s</button>
-    <button id="btnM">1m</button>
-    <button id="btn1">1f</button>
-    <button id="btn2">7s</button>
-    <button id="btn3">7f</button>
-    <button id="btn4">8m</button>
-    <button id="btn5">9m</button>
-    <button id="btnPrev">debug step prev</button>
-    <button id="btnNext">debug step next</button>
-    <button id="btnMode">switch debug mode</button>
-<!--
-    <button id="btnS">s</button>
-    <button id="btnF">f</button>
--->
+    <div id="dbgDiv">
+      <b>Debug</b><br>
+      Mode: <span id="dbgMode"></span> <button id="btnMode">switch</button><br>
+      Step: <button id="btnPrev"> prev</button>
+      <button id="btnNext"> next</button>
+    </div>
     <br>
     <span id="someValue" class="bg-success">234.00</span>
     <br>
@@ -62,7 +66,7 @@
     <br><input id="difVal" type="number" min="0" max="100000000" value="175905" placeholder="Новое значение" title="Новое значение" style="width: 170px"/>
     <br><input id="time" type="number" min="0" max="20000" value="5000" placeholder="Интервал в меллисекундах" title="Интервал в меллисекундах" style="width: 170px"/>
     <br><button id="btnGo">go!</button>
-    <div id='graph' style='position:absolute; width: 400px; height: 400px; background: #fde; top: 0; left: 200px; z-index: -1'></div>
+    <div id='graph'></div>
     <div id='list'></div>
   </div>
   <div id="examine" hidden class="container">
@@ -149,36 +153,34 @@
     <script>
 $(function(){
 
-  $("#switch").click(function(){
-    $("#examine").toggle();
-    $("#develop").toggle();
-  });
+  //common code
+  ;(function(){
+    var isDevelopShown = true;
+
+    function togglePages(){
+      $("#develop").toggle(isDevelopShown);
+      $("#examine").toggle(!isDevelopShown);
+    }
+    togglePages();
+
+    $("#switch").click(function(){
+      isDevelopShown = !isDevelopShown;
+      togglePages();
+    });
+  })();
 
   //development block
-  (function (){
-
-    window.ani = function (delayMs){
-      var start = Date.now();
-      var dgt = window.cntr._digits[0];
-      var v = dgt.$card0.text() % 10;
-      var interv = setInterval(function(){
-        var elapsed = Date.now() - start;
-        if(elapsed > delayMs){
-          dgt.setValue(v + 1);
-          clearInterval(interv);
-          return;
-        }
-        var part = elapsed / delayMs;
-        dgt.setValue(v+part);
-      }, 5);
-    }
+  ;(function (){
 
     var dt, dv, v0, lx;
     $g = $("#graph");
 
+    var initialValue = 132.999;
+    var initialDebug = false;
+
     var cntr = window.cntr = new MechanicalCounter($("#someValue"), {
       mask: "`7,2",
-      value: 345.89,
+      value: initialValue,
       onBeforeSpin: function(dt_, dv_, v0_){
         lx = -10;
         dt = dt_;
@@ -197,64 +199,53 @@ $(function(){
         //$("#debug").text("t:"+t + ", v:" +v+", x:"+x+", y: "+y);
       }
     });
-    cntr._dbgMode = true;
-
-    $("#btn_").click(function(){
-      console.log("sp, val: ", cntr._speed, cntr._value);
-    });
-
-    $("#btn0").click(function(){
-      cntr.setValue(152.999, 20000);
-    });
-
-    $("#btnM").click(function(){
-      cntr.setValue(132.999, 4000);
-    });
-
-    $("#btn1").click(function(){
-      cntr.setValue(152.999, 2000);
-    });
-
-    $("#btn2").click(function(){
-      cntr.setValue(1500022.999, 20000);
-    });
-
-    $("#btn3").click(function(){
-      cntr.setValue(1500022.999, 2000);
-    });
-
-    $("#btn4").click(function(){
-      cntr.setValue(1503089.555, 5000);
-    });
-
-    $("#btn5").click(function(){
-      cntr.setValue(1506067.777, 5000);
-    });
-
-    $("#btnGo").click(function(){
-      var dif = +$("#difVal").val();
-      var time = +$("#time").val();
-      function run(){
-        cntr.setValue(dif, time);
-      };
-
-      $("<div>").text("Знач: "+dif+", время(мс): "+time).appendTo("#list").click(run);
-      run();
-    });
+    cntr._dbgMode = initialDebug;
+    $("#dbgMode").text(cntr._dbgMode ? "on" : "off");
 
     function next(){
-      if(cntr._dbgStep) cntr._dbgStep();
+      if(cntr._dbgStep && cntr._dbgMode) cntr._dbgStep();
     }
-    $("#btnNext").keydown(next).click(next);
+    $("#btnNext").click(next);
 
     function prev(){
-      if(cntr._dbgStep) cntr._dbgStep(true);
+      if(cntr._dbgStep && cntr._dbgMode) cntr._dbgStep(true);
     }
-    $("#btnPrev").keydown(prev).click(prev);
+    $("#btnPrev").click(prev);
+
+    $(document).keydown(function(e){
+      switch(e.keyCode) {
+        case 37:                //left
+        case 38: return prev(); //up
+        case 39:                //right
+        case 40: return next(); //down
+      }
+    });
 
     $("#btnMode").click(function(){
       cntr._dbgMode = !cntr._dbgMode;
-      console.log("dbgMode now is "+(cntr._dbgMode ? "on" : "off"));
+      $("#dbgMode").text(cntr._dbgMode ? "on" : "off");
+    });
+
+    function createBtnDiv(value, time){
+      function run(){
+        cntr.setValue(value, time);
+      };
+
+      $("<div>").text("Знач: "+value+", время(мс): "+time).appendTo("#list").click(run);
+      return run;
+    }
+
+    createBtnDiv(200, 100);
+    createBtnDiv(132.999, 20000);
+    createBtnDiv(132.999, 4000);
+    createBtnDiv(152.999, 2000);
+    createBtnDiv(1500022.999, 20000);
+    createBtnDiv(1500022.999, 2000);
+    createBtnDiv(1503089.555, 5000);
+    createBtnDiv(1506067.777, 5000);
+
+    $("#btnGo").click(function(){
+      createBtnDiv(+$("#difVal").val(), +$("#time").val())();
     });
 
     function deltaByKeyCode(code){
@@ -267,18 +258,10 @@ $(function(){
       return 0;
     }
 
-    $("#btnS").keydown(function(e){
-      cntr.spinValue(cntr._value + deltaByKeyCode(e.keyCode));
-    });
-
-    $("#btnF").keydown(function(e){
-      cntr.fillValue(cntr._value + deltaByKeyCode(e.keyCode));
-    });
-
   })();
 
   //examine block
-  (function(){
+  ;(function(){
 
     var allCntrs = window.allCntrs = [];
     var resetValue;
