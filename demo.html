@@ -45,7 +45,8 @@
     <button id="btn3">7f</button>
     <button id="btn4">8m</button>
     <button id="btn5">9m</button>
-    <button id="btnStep">debug step</button>
+    <button id="btnPrev">debug step prev</button>
+    <button id="btnNext">debug step next</button>
     <button id="btnMode">switch debug mode</button>
 <!--
     <button id="btnS">s</button>
@@ -184,7 +185,7 @@ $(function(){
         dv = dv_;
         v0 = v0_;
         $g.html("");
-        $("#debug2").text("dt:"+dt + ", dv:" +dv+", v0:"+v0);
+        //$("#debug2").text("dt:"+dt + ", dv:" +dv+", v0:"+v0);
       },
       onSpinStep: function(t, v){
         var x = t/dt * 400;
@@ -193,7 +194,7 @@ $(function(){
 
         var y = 400 - (v-v0)/dv * 400;
         $g.append("<div style='position: absolute; top: " + y + "px; left: " + x + "px; width: 1px; height: 1px; background: red'/>");
-        $("#debug").text("t:"+t + ", v:" +v+", x:"+x+", y: "+y);
+        //$("#debug").text("t:"+t + ", v:" +v+", x:"+x+", y: "+y);
       }
     });
     cntr._dbgMode = true;
@@ -241,10 +242,15 @@ $(function(){
       run();
     });
 
-    function step(){
+    function next(){
       if(cntr._dbgStep) cntr._dbgStep();
     }
-    $("#btnStep").keydown(step).click(step);
+    $("#btnNext").keydown(next).click(next);
+
+    function prev(){
+      if(cntr._dbgStep) cntr._dbgStep(true);
+    }
+    $("#btnPrev").keydown(prev).click(prev);
 
     $("#btnMode").click(function(){
       cntr._dbgMode = !cntr._dbgMode;

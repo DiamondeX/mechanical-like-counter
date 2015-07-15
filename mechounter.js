@@ -183,30 +183,12 @@
       empty = v < 1 && d >= o.digits;
 
       digit = this._digits[d++] || this._addDigit(digit);
-      if(frac){
-        frac = digit.setVisValue(v + frac, empty);
-      }else{
-        digit.setIntValue(v, empty);
-      }
+      frac = digit.setVisValue(v + frac, empty);
       v = Math.floor(v * 0.1);
     }
 
     this.dropEmptyDigits();
 
-  };
-
-  Mecntr.prototype._setFinals = function(v, sgn){
-
-    var d = 0
-    , dLen = this._digits.length
-    , fl = Math.floor(v)
-    , frac = v - fl
-    ;
-
-    while(d < dLen){
-      frac = this._digits[d++].setFinal(sgn, fl, frac)._final.nextFrac;
-      fl = Math.floor(fl * 0.1);
-    }
   };
 
   Mecntr.prototype._addDecimalDigit = function(digit, sep){
@@ -222,14 +204,6 @@
 
   Mecntr.prototype._addIntDigitWithSep = function(digit){
     return this._addIntDigit(digit, this._intDigits % 3 === 0);
-  };
-
-  Mecntr.prototype._appendDigit = function(digit){
-    var fl = Math.floor(digit._final.v * 0.1)
-    , frac = digit._final.nextFrac
-    ;
-
-    return this._addDigit().setNew().setFinal(digit._sgn, fl, frac);
   };
 
   Mecntr.prototype._calcSlowdownParams = function(aDif, delay, cb){
@@ -284,6 +258,27 @@
 
   };
 
+  Mecntr.prototype._getUpdateValueBuilder = function(oV, nV){
+    var d = 0
+    , oFl = Math.floor(oV)
+    , nFl = Math.floor(nV)
+    , oFr = oV - oFl
+    , nFr = nV - nFl
+    ;
+
+    return function(digit){
+      digit.createValueUpdaterForSet(oV, nV);
+      oFr = oFl % 10 === 9 ? oFr : 0;
+      oFl = Math.floor(oFl * 0.1);
+      oV = oFl + oFr;
+      nFr = nFl % 10 === 9 ? nFr : 0;
+      nFl = Math.floor(nFl * 0.1);
+      nV = nFl + nFr;
+      return digit;
+    }
+
+  }
+
   Mecntr.prototype._setSpeed = function(spN){
     this._speed = spN * 0.001;
     this._perceptibleDgt = toLog10 * Math.log(this._speed * this._opts.multiplier);
@@ -326,7 +321,9 @@
 
     this._startTime = Date.now();
     this._setSpeed(spN);
-    this._setFinals(newVal, sgn);
+    this._maxPerceptibleDgt = this._perceptibleDgt;
+
+    $("#debug").text("delaySec="+delay+" t1="+t1+" t2="+t2+" oldVal="+oldVal+" newVal="+newVal);
 
     this._currentValues = function(timeMs){
       var t = timeMs * 0.001;
@@ -347,15 +344,45 @@
       }
     }
 
+    //this._buildValueUpdater = this._getUpdateValueBuilder(oldVal, newVal);
+
+    (function(){
+      var d = 0
+      , dLen = self._digits.length
+      , digit
+      , oV = oldVal
+      , nV = newVal
+      , oFl = Math.floor(oV)
+      , nFl = Math.floor(nV)
+      , oFr = oV - oFl
+      , nFr = nV - nFl
+      ;
+
+      while(nV >= 0.1 || d < dLen){
+        digit = self._digits[d++] || self._addDigit(digit);
+        digit.createValueUpdaterForSet(oV, nV);
+        oFr = oFl % 10 === 9 ? oFr : 0;
+        oFl = Math.floor(oFl * 0.1);
+        oV = oFl + oFr;
+        nFr = nFl % 10 === 9 ? nFr : 0;
+        nFl = Math.floor(nFl * 0.1);
+        nV = nFl + nFr;
+      }
+
+    })();
+
     clearInterval(self._interval);
 
     o.onBeforeSpin(delayMs, dif, oldVal);
 
-    self._dbgStep = function(){
+    self._dbgStep = function(stepBack, isTrace){
+      if(stepBack) {
+        this._dbgTime -= this._opts.refreshDelayMs * 2;
+      }
       var t = self._elapsed();
-      console.log("_________\ndbgStep: t=", t);
 
       if(t >= delayMs){
+        $("#debug2").text("dbgStep: overtime: t="+t);
         clearInterval(self._interval);
         self._fillValue(newVal);
         return;
@@ -363,7 +390,13 @@
 
       self._currentValues(t);
       o.onSpinStep(t, self._value);
-      console.log("perc=", self._perceptibleDgt);
+
+      if(1){
+        self._isTrace = isTrace;
+        $("#debug2").text("dbgStep: t="+t+" v="+self._value+" sp="+self._speed);
+        console.log("_________\ndbgStep: t="+t+" v="+self._value+" sp="+self._speed);
+        console.log("perc=", self._perceptibleDgt);
+      }
 
       if(0){
         //console.log(self._value);
@@ -374,33 +407,22 @@
       var v = self._value
       , dLen = self._digits.length
       ;
-      var digit, d = 0, frac, empty;
+      var digit, d = 0, frac = 0, empty;
 
-      while(d < self._perceptibleDgt && (v >= 0.1 || d < o.digits || d < dLen)){
-
-        digit = self._digits[d++] || self._appendDigit(digit);
-        digit.setVisValue(v);
-        v = v * 0.1;
-
-      }
-
-      if(v >= 0.1 || d < o.digits || d < dLen){
+      while(d < dLen){
         empty = v < 1 && d >= o.digits;
 
-        digit = self._digits[d++] || self._appendDigit(digit);
-        frac = digit.setVisValue(v, empty);
+        if(1){
+          console.groupCollapsed("d="+d+" updateValue: v="+v+" fracPrev="+frac+" empty="+empty);
+        }
+
+        frac = self._digits[d++]._updateValue(v, frac, empty);
         v = v * 0.1;
 
-        while(v >= 0.1 || d < o.digits || d < dLen){
-          empty = v < 1 && d >= o.digits;
-
-          digit = self._digits[d++] || self._appendDigit(digit);
-          frac = digit.nearest(v, frac, empty);
-          v = v * 0.1;
+        if(1){
+          console.groupEnd();
         }
       }
-
-      self.dropEmptyDigits();
 
     }
     if(!this._dbgMode){
@@ -468,7 +490,7 @@
 
       while(v > 0){
         digit = self._addDigit(digit);
-        digit.setIntValue(v);
+        digit.setVisValue(v);
         v = Math.floor(v * 0.1);
       }
     })(newVal);
@@ -637,40 +659,101 @@
 
     delay = t1 + t2;
 
-    dgp.t1 = t1;
-    dgp.t2 = t2;
-    dgp.delay = delay;
-
     this._updateValue = function(t){
       if(t > delay){
-        dgd.push({
-          t:t,
-          n:"out"
-        });
         self.setVisValue(self._dstVal);
         return;
       }
 
       if(t <= t1){
-        dgd.push({
-          t:t,
-          mul: spN * t,
-          res: self._srcVal + spN * t,
-          n:"lin"
-        });
         self.setVisValue(self._srcVal + spN * t);
         return;
       }
 
       t -= t1;
-      dgd.push({
-        t:t,
-        mul: lgValue(t2 - t, k),
-        res: self._dstVal - lgValue(t2 - t, k),
-        n:"log"
-      });
       self.setVisValue(self._dstVal - lgValue(t2 - t, k));
     }
+  };
+
+  Digit.prototype.createValueUpdaterForSet = function(oldVisVal, newVisVal){
+    if(oldVisVal === newVisVal) {
+      this._updateValue = function(){ return 0; };
+      return;
+    }
+
+    if(this._num === 0){
+      this._updateValue = function(value){ return this.setVisValue(value); };
+      return;
+    }
+
+    var maxPercDiff = this._num - this.owner._maxPerceptibleDgt;
+    var correction = 0;
+    var limit;
+
+    if(oldVisVal < newVisVal){
+      limit = function(v){
+        if(v < oldVisVal) return oldVisVal;
+        if(newVisVal < v) return newVisVal;
+        return v;
+      };
+    }else{
+      limit = function(v){
+        if(v < newVisVal) return newVisVal;
+        if(oldVisVal < v) return oldVisVal;
+        return v;
+      };
+    }
+
+    this._updateValue = function(value, fracPrev, empty){
+      var percDiff = this._num - this.owner._perceptibleDgt;
+
+      console.log("from=", oldVisVal, " to=", newVisVal, " maxPercDiff=", maxPercDiff);
+
+      if(percDiff < 1){
+        console.log("evenly: percDiff=", percDiff, " val=", value);
+        value += correction;
+        console.log("corrected=", value, " limited=", limit(value));
+        return this.setVisValue(limit(value), empty);
+      }
+
+      var floor = Math.floor(value);
+      var frac, fracNow = value - floor;
+
+      if(percDiff < 2){
+        console.log("halfevenly: percDiff=", percDiff, " fracNow=", fracNow, " fracPrev=", fracPrev);
+        percDiff--;
+        frac = percDiff * fracPrev + (1 - percDiff + correction) * fracNow;
+        console.log("frac=", frac, " val=", floor + frac, " limited=", limit(floor + frac));
+        return this.setVisValue(limit(floor + frac), empty);
+      }
+
+      console.log("impulsive: percDiff=", percDiff, " fracPrev=", fracPrev);
+      console.log("val=", floor + fracPrev, " limited=", limit(floor + fracPrev));
+      return this.setVisValue(limit(floor + fracPrev), empty);
+    }
+  };
+
+  Digit.prototype.updateValue = function(value, fracPrev, empty){
+
+    var percDiff = this._num - this.owner._perceptibleDgt;
+
+    if(percDiff < 1){
+      console.log("evenly: percDiff=", percDiff);
+      return this.setVisValue(value, empty);
+    }
+
+    var floor = Math.floor(value);
+    var frac, fracNow = value - floor;
+
+    if(percDiff < 2){
+      percDiff--;
+      frac = percDiff * fracPrev + (1 - percDiff) * fracNow;
+      console.log("halfevenly: percDiff=", percDiff, " fracNow=", fracNow, " fracPrev=", fracPrev, " frac=", frac);
+      return this.setVisValue(floor + frac, empty);
+    }
+
+    console.log("impulsive: percDiff=", percDiff, " fracPrev=", fracPrev, " frac=", frac);
+    return this.setVisValue(floor + fracPrev, empty);
   }
 
   Digit.prototype.setFinal = function(sgn, fl, frac){
@@ -687,6 +770,10 @@
   };
 
   Digit.prototype.nearest = function(value, frac, empty){
+
+    var percDiff = this._num - 1 - this.owner._perceptibleDgt;
+    var isGibrib = percDiff > 0 && percDiff < 1;
+    if(isGibrib) console.group("digit#"+this._num+": percDiff="+percDiff);
 
     this._oldVal = this._value;
 
@@ -760,6 +847,7 @@
     this._oldVisVal = floor + frac;
 
     this.empty = flDgt === 0 && frac < 0.3 && empty;
+    console.groupEnd();
     return this._fracNext;
   };
 
@@ -836,26 +924,6 @@
 
     this.empty = flDgt === 0 && frac < 0.3 && empty;
     return this._fracNext;
-  };
-
-  Digit.prototype.setIntValue = function(value, empty){
-    this._oldVal = this._value;
-
-    this._value = this._floor = value;
-
-    var shift1 = -this.owner._height;
-
-    var flDgt = this._floor % 10;
-    var zero = empty ? "" : "0";
-    this.$card0.css("top",         "0px").text(flDgt === 0 ? zero : flDgt);
-    this.$card1.css("top", shift1 + "px").text(flDgt === 9 ? zero : flDgt + 1);
-
-    this._frac = 0;
-    this._fracNext = 0;
-    this._oldVisVal = value;
-
-    this.empty = flDgt === 0 && empty;
-    return 0;
   };
 
   Digit.prototype.setNew = function(){
