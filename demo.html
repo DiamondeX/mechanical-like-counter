@@ -176,7 +176,7 @@ $(function(){
     $g = $("#graph");
 
     var initialValue = 132.999;
-    var initialDebug = false;
+    var initialDebug = true;
 
     var cntr = window.cntr = new MechanicalCounter($("#someValue"), {
       mask: "`7,2",
@@ -236,7 +236,9 @@ $(function(){
     }
 
     createBtnDiv(200, 100);
+    createBtnDiv(200, 7000);
     createBtnDiv(132.999, 20000);
+    createBtnDiv(132.999, 7000);
     createBtnDiv(132.999, 4000);
     createBtnDiv(152.999, 2000);
     createBtnDiv(1500022.999, 20000);

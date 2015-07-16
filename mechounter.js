@@ -289,7 +289,7 @@
     }
 
     if(!delayMs || this._value === newVal){
-      clearInterval(self._interval);
+      clearInterval(this._interval);
       this._fillValue(newVal);
       return;
     }
@@ -299,7 +299,8 @@
     , oldVal = this._value
     , delay = delayMs * 0.001
     , dif = newVal - oldVal
-    , sgn = dif < 0 ? -1 : 1
+    , isInc = dif > 0
+    , sgn = isInc ? 1 : -1
     , aDif = Math.abs(dif)
     , k = 1   // spin slowdown intensification coefficient (k >= 1 always)
     , spN = 0 // initial spin speed (rounds of dif per second)
@@ -336,6 +337,64 @@
       }
     };
 
+    //deprecated
+    if(isInc){
+      /*
+      // value is increasing
+
+      var oldVal_ = newVal;
+      var newVal_ = oldVal;
+      var spN_ = spN;
+      var isSlowdown = true;
+
+      this._currentValues = function(timeMs){
+        var t = delay - timeMs * 0.001;
+        console.log("curVal inc: t=", t, " t2=", t2);
+
+        if(t < t2){
+          console.log("curVal inc: logarithmic");
+          spN = lgSpeed(t, k);
+          self._setSpeed(spN);
+          self._value = newVal - lgValueBySpeed(spN, k);
+          return;
+        }
+        if(isSlowdown){
+          self._setSpeed(spN_);
+          isSlowdown = false;
+          console.log("curVal: switch ok!");
+        }
+        console.log("curVal inc: linear");
+        t -= t2;
+
+        self._value = oldVal + spN_ * (t1 - t);
+      };
+      /**/
+    }else{
+      /*
+       // value is decreasing
+
+      this._currentValues = function(timeMs){
+        var t = delay - timeMs * 0.001;
+
+        if(t <= t1){
+          console.log("curVal dec: linear");
+          self._value = oldVal - spN * t;
+          return;
+        }
+        console.log("curVal dec: logarithmic");
+        t -= t1;
+
+        spN = lgSpeed(t2 - t, k);
+        self._setSpeed(spN);
+        self._value = newVal + lgValueBySpeed(spN, k);
+        if(self._value > oldVal){
+          self._value = oldVal;
+          $("#debug").text($("#debug").text() + " whole value limited down to old value!");
+        }
+      };
+      /**/
+    }
+
     (function(){
       var d = 0
       , dLen = self._digits.length
@@ -350,7 +409,7 @@
 
       while(nV >= 0.1 || d < dLen){
         digit = self._digits[d++] || self._addDigit(digit);
-        digit.createValueUpdaterForSet(oV, nV);
+        digit.createValueUpdaterForSet(oV, nV, isInc);
         oFr = oFl % 10 === 9 ? oFr : 0;
         oFl = Math.floor(oFl * 0.1);
         oV = oFl + oFr;
@@ -394,7 +453,7 @@
         return;
       }
 
-      var v = self._value
+      var v = self._value + isInc
       , dLen = self._digits.length
       ;
       var digit, d = 0, frac = 0, empty;
@@ -600,7 +659,7 @@
   };
 
   Digit.prototype.prepareValueIntervalForReset = function(dstVal){
-    this._srcVal = this._oldVisVal % 10;
+    this._srcVal = this._value % 10;
     this._dstVal = dstVal % 10;
     if(this._dstVal < this._srcVal) this._dstVal += 10;
     this._aDif = this._dstVal - this._srcVal;
@@ -640,7 +699,7 @@
     }
   };
 
-  Digit.prototype.createValueUpdaterForSet = function(oldVisVal, newVisVal){
+  Digit.prototype.createValueUpdaterForSet = function(oldVisVal, newVisVal, isInc){
     console.log("updater for digit#"+this._num+"..");
     if(oldVisVal === newVisVal) {
       console.log("updater absent");
@@ -648,22 +707,34 @@
       return;
     }
 
+    //this._setVisValue = isInc ? this.setCeilValue : this.setVisValue;
+    this._setVisValue = isInc ? this.setVis2Value : this.setVisValue;
+    //this._setVisValue = this.setVisValue;
+
     if(this._num === 0){
       console.log("last digit updater");
-      this._updateValue = function(value){ return this.setVisValue(value); };
+      this._updateValue = function(value){ return this._setVisValue(value - isInc); };
       return;
     }
 
-    var correction = oldVisVal < newVisVal ? -1 : 0;
     var limit;
-
-    if(oldVisVal < newVisVal){
+    var perc;
+    if(isInc){
+      perc = 1/(newVisVal - oldVisVal);
+      var n = this._num;
       limit = function(v){
-        if(v < oldVisVal) return oldVisVal;
-        if(newVisVal < v) return newVisVal;
+        if(v < oldVisVal){
+          $("#debug").text($("#debug").text()+" pre inc limit"+n);
+          return oldVisVal;
+        }
+        if(newVisVal < v){
+          $("#debug").text($("#debug").text()+" post inc limit"+n);
+          return newVisVal;
+        }
         return v;
       };
     }else{
+      // looks like this variant of limit function never affect value!!
       limit = function(v){
         if(v < newVisVal) return newVisVal;
         if(oldVisVal < v) return oldVisVal;
@@ -672,7 +743,7 @@
     }
 
     var maxPercDiff = this._num - this.owner._maxPerceptibleDgt;
-    if(maxPercDiff >= 1){
+    if(!isInc && maxPercDiff >= 1){
       console.log("impulse updater");
       this._updateValue = function(value, fracPrev, empty){
 
@@ -682,7 +753,7 @@
 
         console.log("impulsive: fracPrev=", fracPrev);
         console.log("val=", floor + fracPrev, " limited=", limit(floor + fracPrev));
-        return this.setVisValue(limit(floor + fracPrev), empty);
+        return this._setVisValue(limit(floor + fracPrev), empty);
       };
       return;
     }
@@ -693,59 +764,127 @@
 
       console.log("from=", oldVisVal, " to=", newVisVal, " maxPercDiff=", maxPercDiff);
 
-      if(percDiff < 1){
-        console.log("evenly: percDiff=", percDiff, " val=", value);
-        value += correction;
-        console.log("corrected=", value, " limited=", limit(value));
-        return this.setVisValue(limit(value), empty);
+      this.$el.css("color", "inherit");
+      if(percDiff < 0){
+
+      } else if(percDiff < 1){
+        this.$el.css("color", "red");
+      } else if(percDiff < 2){
+        this.$el.css("color", "lime");
+      } else if(percDiff < 3){
+        this.$el.css("color", "blue");
       }
 
-      var floor = Math.floor(value);
-      var frac, fracNow = value - floor;
+      if(!isInc && percDiff < 1){
+        console.log("evenly dec: percDiff=", percDiff);
+        console.log("val=", value, " limited=", limit(value));
+        return this._setVisValue(limit(value), empty);
+      }
 
-      if(percDiff < 2){
-        console.log("halfevenly: percDiff=", percDiff, " fracNow=", fracNow, " fracPrev=", fracPrev);
+      var frac;
+
+      if(isInc && percDiff < 1){
+        console.log("evenly inc: percDiff=", percDiff);
+        console.log("oVal=", value);
+        value -= 1; //(value - oldVisVal) * perc;
+        console.log("val=", value, " limited=", limit(value));
+        return this._setVisValue(limit(value), empty);
+      }
+
+      var round = Math.floor(value);
+      var fracNow = value - round;
+
+      if(!isInc && percDiff < 2){
+        console.log("halfevenly dec: percDiff=", percDiff, " fracNow=", fracNow, " fracPrev=", fracPrev);
         percDiff--;
-        frac = percDiff * fracPrev + (1 - percDiff + correction) * fracNow;
-        console.log("frac=", frac, " val=", floor + frac, " limited=", limit(floor + frac));
-        return this.setVisValue(limit(floor + frac), empty);
+        frac = percDiff * fracPrev + (1 - percDiff) * fracNow;
+        console.log("frac=", frac, " val=", round + frac, " limited=", limit(round + frac));
+        return this._setVisValue(limit(round + frac), empty);
       }
 
-      console.log("impulsive: percDiff=", percDiff, " fracPrev=", fracPrev);
-      console.log("val=", floor + fracPrev, " limited=", limit(floor + fracPrev));
-      return this.setVisValue(limit(floor + fracPrev), empty);
+      if(isInc && percDiff < 2){
+        console.log("halfevenly inc: percDiff=", percDiff);
+        percDiff--;
+        frac = percDiff * fracPrev + (1 - percDiff) * (fracNow - 1);//(value - oldVisVal) * perc);
+        console.log("fracNow=", fracNow, " fracPrev=", fracPrev, " frac=", frac);
+        console.log("val=", round + frac, " limited=", limit(round + frac));
+        return this._setVisValue(limit(round + frac), empty);
+      }
+
+      console.log("impulsive dec: percDiff=", percDiff);
+      console.log("fracPrev=", fracPrev);
+      console.log("val=", round + fracPrev, " limited=", limit(round + fracPrev));
+      return this._setVisValue(limit(round + fracPrev), empty);
     };
   };
 
   Digit.prototype.setVisValue = function(value, empty){
-    this._oldVal = this._value;
 
     this._value = value;
-    this._floor = Math.floor(value);
 
-    var flDgt = this._floor % 10
-    , frac = value - this._floor
+    var round = Math.floor(value);
+
+    var rnDgt = round % 10
+    , frac = value - round
     ;
 
     var shift0 = frac * this.owner._height;
     var shift1 = shift0 - this.owner._height;
 
-    this.$card0.css("top", shift0 + "px");
-    this.$card1.css("top", shift1 + "px");
+    this.$card0.css("top", shift0 + "px"); //positive - lower  / smaller
+    this.$card1.css("top", shift1 + "px"); //negative - higher / bigger
 
     var zero = empty ? "" : "0";
-    this.$card0.text(flDgt === 0 ? zero : flDgt);
-    this.$card1.text(flDgt === 9 ? zero : flDgt + 1);
+    var zRnDgt = "<" + zero + rnDgt;
+    if(this._zRnDgt !== zRnDgt){
+      this._zRnDgt = zRnDgt;
+      this.$card0.text(rnDgt === 0 ? zero : rnDgt);
+      this.$card1.text(rnDgt === 9 ? zero : rnDgt + 1);
+    }
 
-    this._frac = frac;
-    this._fracNext = flDgt !== 9 ? 0 : frac;
-    this._oldVisVal = value;
-
-    empty = flDgt === 0 && frac < 0.3 && empty;
+    empty = rnDgt === 0 && frac < 0.3 && empty;
     if(!this.empty && empty) this.wasted = true;
     if(this.empty && !empty) this.reveal();
     this.empty = empty;
-    return this._fracNext;
+
+    return rnDgt !== 9 ? 0 : frac;
+  };
+
+  Digit.prototype.setVis2Value = function(value, empty){
+    var frac = this.setVisValue(value, empty);
+    return frac ? (frac - 1) : 0;
+  };
+
+  Digit.prototype.setCeilValue = function(value, empty){
+
+    this._value = value;
+
+    var round = Math.ceil(value);
+
+    var rnDgt = round % 10
+    , frac = value - round
+    ;
+
+    var shift0 = this.owner._height * frac;
+    var shift1 = this.owner._height + shift0;
+
+    this.$card0.css("top", shift0 + "px"); //negative - higher / bigger
+    this.$card1.css("top", shift1 + "px"); //positive - lower  / smaller
+
+    var zero = empty ? "" : "0";
+    var zRnDgt = ">" + zero + rnDgt;
+    if(this._zRnDgt !== zRnDgt){
+      this._zRnDgt = zRnDgt;
+      this.$card0.text(rnDgt === 0 ? zero : rnDgt);
+      this.$card1.text(rnDgt === 1 ? zero : rnDgt - 1);
+    }
+
+    empty = rnDgt === 0 && frac < 0.3 && empty;
+    if(!this.empty && empty) this.wasted = true;
+    if(this.empty && !empty) this.reveal();
+    this.empty = empty;
+
+    return rnDgt !== 0 ? 0 : frac;
   };
 
 })(jQuery);
