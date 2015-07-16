@@ -19,7 +19,7 @@
     "url": "https://github.com/DiamondeX/mechanical-like-counter/issues"
   },
   "homepage": "https://github.com/DiamondeX/mechanical-like-counter#readme",
-  "dependencies": {
+  "devDependencies": {
     "bootstrap": "^3.3.5"
   }
 }
