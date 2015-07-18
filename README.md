@@ -5,3 +5,5 @@ Mechounter is a JavaScript plugin to represent enumerable multidigit values to l
 
 - create project page on github
 - start using grunt for build and test tasks
+- add tests
+- create development build
