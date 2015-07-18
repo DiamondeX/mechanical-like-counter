@@ -1,7 +1,6 @@
 #### Mechounter
 - Copyright (c) 2015 Ruslan Zhomir ([ruslanjf@gmail.com](mailto:ruslanjf@gmail.com)) and contributors
-
-Available for use under the [MIT License](http://en.wikipedia.org/wiki/MIT_License)
+- Available for use under the [MIT License](http://en.wikipedia.org/wiki/MIT_License)
 
 The MIT License (MIT)
 
