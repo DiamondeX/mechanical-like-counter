@@ -1,24 +1,29 @@
 {
-  "name": "mechanical-like-counter",
-  "version": "0.0.1",
-  "description": "Widget to represent enumerable multidigit values to look and behave like mechanical counter",
+  "name": "mechounter",
+  "version": "1.0.0",
+  "description": "Mechounter is a JavaScript plugin to represent enumerable multidigit values to look and behave like mechanical counter. It is currently available only in jQuery flavor",
   "main": "mechounter.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DiamondeX/mechanical-like-counter.git"
+    "url": "git+https://github.com/DiamondeX/mechounter.git"
   },
   "keywords": [
-    "jquery"
+    "jquery",
+    "jquery-plugin",
+    "ecosystem:jquery",
+    "mechanical",
+    "counter",
+    "ui"
   ],
   "author": "DiamondeX",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/DiamondeX/mechanical-like-counter/issues"
+    "url": "https://github.com/DiamondeX/mechounter/issues"
   },
-  "homepage": "https://github.com/DiamondeX/mechanical-like-counter#readme",
+  "homepage": "http://DiamondeX.github.io/mechounter/",
   "devDependencies": {
     "bootstrap": "^3.3.5"
   }

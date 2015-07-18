@@ -1,0 +1,37 @@
+{
+  "name": "mechounter",
+  "description": "Mechounter is a JavaScript plugin to represent enumerable multidigit values to look and behave like mechanical counter. It is currently available only in jQuery flavor.",
+  "version": "1.0.0",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/DiamondeX/mechounter/blob/master/LICENSE"
+    }
+  ],
+  "title": "Mechounter",
+  "keywords": [
+    "counter",
+    "mechanical",
+    "number",
+    "spin",
+    "spinner",
+    "ui"
+  ],
+  "author": {
+    "url": "https://github.com/DiamondeX",
+    "name": "DiamondeX"
+  },
+  "maintainers": [
+    {
+      "url": "https://github.com/DiamondeX",
+      "name": "DiamondeX"
+    }
+  ],
+  "download": "https://github.com/DiamondeX/mechounter/releases",
+  "homepage": "http://DiamondeX.github.io/mechounter/",
+  "docs": "http://DiamondeX.github.io/mechounter/",
+  "bugs": "https://github.com/DiamondeX/mechounter/issues",
+  "dependencies": {
+    "jquery": ">=1.4.4"
+  }
+}
