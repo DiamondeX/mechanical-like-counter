@@ -1,0 +1,96 @@
+#forkme {
+  position: absolute;
+  right: -62px;
+  top: 40px;
+  transform: rotate(45deg);
+  background-color: #483d8b;
+  padding: 4px;
+  font-weight: bold;
+}
+
+#forkme > a {
+  padding: 2px 50px;
+  color: #add8e6;
+  border: solid 2px #add8e6;
+}
+
+#forkme > a:hover {
+  text-decoration: none;
+  color: cornflowerblue;
+  border-color: cornflowerblue;
+}
+
+#forkme > a:visited {
+  text-decoration: none;
+}
+
+.jumbotron {
+  background-color: #7c334f;
+  color: #ece4d8;
+}
+
+.jumbotron h1 {
+  font-weight: bold;
+}
+
+.jumbotron h3 {
+  font: bold italic 1.2em/1.5 Georgia, Times, “Times New Roman”, serif;
+  color: #e69b95;
+}
+.counter-wrap{
+  height: 40px;
+}
+.counter-wrap:after{
+  display: inline-block;
+  height: 100%;
+  width: 0px;
+  vertical-align: middle;
+  content: '.';
+  visibility: hidden;
+}
+.counter{
+  vertical-align: middle;
+  cursor: help;
+  background-color: #f5f5f5;
+  border: 1px solid #e3e3e3;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+  box-shadow: inset 0 0 10px rgba(0,0,0,.5);
+  padding: 0 0.5em;
+}
+.input-group-addon{
+  font-family: monospace;
+}
+
+.font-style-1{
+  font-family: "Times New Roman", Georgia, Times, serif;
+}
+
+.font-style-2{
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+.font-style-3{
+  font-family: "Comic Sans MS", cursive, Arial, sans-serif;
+}
+
+.font-style-4{
+  font-family: Arial, sans-serif;
+}
+
+.font-style-5{
+  font-family: fantasy;
+}
+
+.font-style-6{
+  font-family: "Lucida Console" monospace;
+}
+
+.font-style-7{
+  font-family: "Courier New" Courier monospace;
+}
+
+.font-style-8{
+  font-family: cursive;
+}
+

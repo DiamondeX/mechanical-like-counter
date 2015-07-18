@@ -1,72 +1,250 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=640">
+    <meta charset="UTF-8">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
 
-    <link rel="stylesheet" href="css/core.css" media="screen">
-    <link rel="stylesheet" href="css/mobile.css" media="handheld, only screen and (max-device-width:640px)">
-    <link rel="stylesheet" href="css/github-light.css">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/mechounter.css">
+    <link rel="stylesheet" href="css/page.css">
 
-    <script type="text/javascript" src="js/modernizr.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script type="text/javascript" src="js/headsmart.min.js"></script>
-    <script type="text/javascript">
-      $(document).ready(function () {
-        $('#main_content').headsmart()
-      })
-    </script>
     <script type="text/javascript" src="js/jquery.mechounter.min.js"></script>
+
     <title>Mechounter by DiamondeX</title>
   </head>
-
   <body>
-    <a id="forkme_banner" href="https://github.com/DiamondeX/mechounter">View on GitHub</a>
-    <div class="shell">
-
-      <header>
-        <span class="ribbon-outer">
-          <span class="ribbon-inner">
+    <div id="forkme"><a href="https://github.com/DiamondeX/mechounter">Fork me on GitHub</a></div>
+    <div class="jumbotron">
+      <div class="container">
+        <div class="row">
+          <div>
             <h1>Mechounter</h1>
-            <h2>Widget to represent enumerable multidigit values to look and behave like mechanical counter </h2>
-          </span>
-          <span class="left-tail"></span>
-          <span class="right-tail"></span>
-        </span>
-      </header>
+            <h3>Widget to represent enumerable multidigit values to look and behave like mechanical counter</h3>
+            <div class="btn-group" role="group" aria-label="...">
+              <a class="btn btn-success" href="https://github.com/DiamondeX/mechounter/zipball/master" role="button"><span class="glyphicon glyphicon-cloud-download" aria-hidden="true"></span> whole project: as .ZIP</a>
+              <a class="btn btn-success" href="https://github.com/DiamondeX/mechounter/tarball/master" role="button">as .TGZ</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row page-header">
 
-      <section id="downloads">
-        <span class="inner">
-          <a href="https://github.com/DiamondeX/mechounter/zipball/master" class="zip"><em>download</em> .ZIP</a><a href="https://github.com/DiamondeX/mechounter/tarball/master" class="tgz"><em>download</em> .TGZ</a>
-        </span>
-      </section>
+        <div class="col-sm-6 col-md-8 col-lg-9">
 
+          <button id="addCntr" class="btn btn-default" title="Add counter"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add</button>
 
-      <span class="banner-fix"></span>
+          &nbsp;&nbsp;
 
-      <section id="main_content">
-        <h3>
-<a id="demo" class="anchor" href="#demo" aria-hidden="true"><span class="octicon octicon-link"></span></a>Demo</h3>
+          <div class="btn-group" role="group" aria-label="...">
+            <a class="app-btn-add__001 btn btn-default" href="#" role="button">+0.01</a>
+            <a class="app-btn-add__01_ btn btn-default" href="#" role="button">+0.1</a>
+            <a class="app-btn-add__1__ btn btn-default" href="#" role="button">+1</a>
+            <a class="app-btn-add_10__ btn btn-default" href="#" role="button">+10</a>
+          </div>
 
-        <p>Demo section</p>
-      </section>
+          <button type="button" class="app-btn-go btn btn-primary"><span class="glyphicon glyphicon-play" aria-hidden="true"></span> Go!</button>
 
-      <footer>
-        <span class="ribbon-outer">
-          <span class="ribbon-inner">
-            <p>this project by <a href="https://github.com/DiamondeX">DiamondeX</a> can be found on <a href="https://github.com/DiamondeX/mechounter">GitHub</a></p>
-          </span>
-          <span class="left-tail"></span>
-          <span class="right-tail"></span>
-        </span>
-        <p>Generated with <a href="https://pages.github.com">GitHub Pages</a> using Merlot</p>
-        <span class="octocat"></span>
-      </footer>
+        </div>
 
+        <div class="col-sm-6 col-md-4 col-lg-3">
+
+          <div class="input-group has-error">
+            <span class="input-group-btn">
+              <button type="button" class="app-btn-reset btn btn-danger"><span class="glyphicon glyphicon-repeat" aria-hidden="true"></span> Reset to</button>
+            </span>
+            <input class="app-inp-reset form-control" type="number" min="0" max="100000000" value="175" placeholder="Reset value (may be fractional)" title="Reset value"/>
+            <div class="input-group-addon" title="counting units">cu</div>
+          </div><!-- /input-group -->
+
+        </div>
+
+      </div>
+
+      <div id="cntrs" class="row">
+
+      </div>
+
+      <template id="cntrBlock" class="hidden">
+        <div class="col-xs-6 col-sm-4 col-md-3 col-lg-2">
+
+          <div class="panel panel-default">
+
+            <div class="panel-heading clearfix">
+              <button type="button" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="panel-body">
+
+              <div class="text-center counter-wrap">
+
+                <span class="counter" title="exact value is 1234.56">1234.56</span>
+
+              </div>
+
+            </div>
+
+            <div class="btn-group btn-group-justified" role="group" aria-label="...">
+              <a class="app-btn-add__001 btn btn-default btn-xs" href="#" role="button">+0.01</a>
+              <a class="app-btn-add__01_ btn btn-default btn-xs" href="#" role="button">+0.1</a>
+              <a class="app-btn-add__1__ btn btn-default btn-xs" href="#" role="button">+1</a>
+              <a class="app-btn-add_10__ btn btn-default btn-xs" href="#" role="button">+10</a>
+            </div>
+
+            <div class="input-group">
+              <input class="app-inp-value form-control input-sm" type="number" min="0" max="100000000" value="2016" placeholder="New value" title="New value"/>
+              <div class="input-group-addon" title="counting units">cu</div>
+            </div>
+            <div class="input-group">
+              <input class="app-inp-delay form-control input-sm" type="number" min="0" max="20000" value="5000" placeholder="Interval in milliseconds" title="Interval in milliseconds"/>
+              <div class="input-group-addon" title="milliseconds">ms</div>
+            </div>
+
+            <button type="button" class="app-btn-go btn btn-primary btn-block"><span class="glyphicon glyphicon-play" aria-hidden="true"></span> Go!</button>
+            <div class="app-btn-reset hidden"></div>
+
+          </div>
+
+        </div>
+      </template>
+    </div>
+    <div class="hidden">
+      <script>
+$(function(){
+
+  //examine block
+  ;(function(){
+
+    var allCntrs = window.allCntrs = [];
+    var resetValue;
+
+    function getRandomInt(min, max) {
+      // using Math.round() gives non-uniform distribution!
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function addCntr(){
+
+      var $cntr, value = 2016, delay = 5000;
+
+      var $cntrBlock = $($("#cntrBlock").html()).prependTo("#cntrs").hide().fadeIn(1000, function(){
+        var n = getRandomInt(0,3), rgb = [getRandomInt(0,255), getRandomInt(0,255), getRandomInt(0,255)];
+        if(n !== 3) rgb[n] = 255;
+        if(rgb[0] + rgb[1] + rgb[2] > 245*3) rgb[getRandomInt(0,2)] = getRandomInt(0,128);
+        $cntr = $cntrBlock.find(".counter").addClass("font-style-"+getRandomInt(1,8)).css({
+          fontSize: getRandomInt(10,24)+"px",
+          color: "rgb("+rgb[0]+", "+rgb[1]+", "+rgb[2]+")"
+        }).mechounter({
+          mask: "`7,2",
+          value: 1234.56
+        });
+
+        allCntrs.push($cntr);
+
+      });
+
+      $cntrBlock.find(".close").click(function(){
+        $cntr.mechounter("destroy");
+        $(this).off("click").click(destroy);
+        $cntrBlock.stop(true).fadeOut(1000, destroy);
+
+        function destroy(){
+          allCntrs.splice(allCntrs.indexOf($cntr), 1);
+          $cntrBlock.remove();
+        }
+
+      });
+
+      function toTitle(newVal){
+        $cntr.attr("title", "exact value is (or will be) "+newVal);
+        return newVal;
+      }
+
+      function increaseBy(inc){
+        var newVal = $cntr.mechounter("getValue") + inc;
+        $cntr.mechounter("spinTo", toTitle(newVal), delay);
+        return false;
+      }
+
+      $cntrBlock.find(".app-btn-add__001").click(function(){
+        return increaseBy(0.01);
+      });
+
+      $cntrBlock.find(".app-btn-add__01_").click(function(){
+        return increaseBy(0.1);
+      });
+
+      $cntrBlock.find(".app-btn-add__1__").click(function(){
+        return increaseBy(1);
+      });
+
+      $cntrBlock.find(".app-btn-add_10__").click(function(){
+        return increaseBy(10);
+      });
+
+      $cntrBlock.find(".app-btn-go").click(function(){
+        //value = $cntrBlock.find(".app-inp-value").val();
+        //delay = $cntrBlock.find(".app-inp-delay").val();
+        $cntr.mechounter("spinTo", toTitle(value), delay);
+      });
+
+      $cntrBlock.find(".app-inp-value").change(function(){
+        value = $(this).val();
+      })
+
+      $cntrBlock.find(".app-inp-delay").change(function(){
+        delay = $(this).val();
+      })
+
+      $cntrBlock.find(".app-btn-reset").click(function(){
+        $cntr.mechounter("resetTo", toTitle(resetValue));
+      });
+
+    }
+
+    var i = 1;
+    while(i--){
+      addCntr();
+    }
+
+    $("#addCntr").click(addCntr);
+
+    $(".page-header .app-btn-add__001").click(function(){
+      $("#cntrs .app-btn-add__001").click();
+      return false;
+    });
+
+    $(".page-header .app-btn-add__001").click(function(){
+      $("#cntrs .app-btn-add__001").click();
+      return false;
+    });
+
+    $(".page-header .app-btn-add__1__").click(function(){
+      $("#cntrs .app-btn-add__1__").click();
+      return false;
+    });
+
+    $(".page-header .app-btn-add_10__").click(function(){
+      $("#cntrs .app-btn-add_10__").click();
+      return false;
+    });
+
+    $(".page-header .app-btn-go").click(function(){
+      $("#cntrs .app-btn-go").click();
+    });
+
+    $(".page-header .app-btn-reset").click(function(){
+      resetValue = $(".page-header .app-inp-reset").val();
+      $("#cntrs .app-btn-reset").click();
+    });
+
+  })();
+
+});
+      </script>
     </div>
 
-    
   </body>
 </html>
