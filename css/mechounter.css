@@ -13,9 +13,11 @@
   vertical-align: middle;
 }
 
+.mechounter > *{
+  vertical-align: middle;
+}
 .mechounter > .mechounter-digit{
   position: relative;
-  vertical-align: middle;
 }
 .mechounter > .mechounter-digit > .mechounter-rect{
   visibility: hidden;
