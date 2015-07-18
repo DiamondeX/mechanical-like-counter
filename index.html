@@ -5,13 +5,13 @@
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=640">
 
-    <link rel="stylesheet" href="stylesheets/core.css" media="screen">
-    <link rel="stylesheet" href="stylesheets/mobile.css" media="handheld, only screen and (max-device-width:640px)">
-    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <link rel="stylesheet" href="css/core.css" media="screen">
+    <link rel="stylesheet" href="css/mobile.css" media="handheld, only screen and (max-device-width:640px)">
+    <link rel="stylesheet" href="css/github-light.css">
 
-    <script type="text/javascript" src="javascripts/modernizr.js"></script>
+    <script type="text/javascript" src="js/modernizr.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script type="text/javascript" src="javascripts/headsmart.min.js"></script>
+    <script type="text/javascript" src="js/headsmart.min.js"></script>
     <script type="text/javascript">
       $(document).ready(function () {
         $('#main_content').headsmart()
@@ -44,12 +44,90 @@
 
       <span class="banner-fix"></span>
 
-
       <section id="main_content">
         <h3>
-<a id="uc" class="anchor" href="#uc" aria-hidden="true"><span class="octicon octicon-link"></span></a>Page under construction.</h3>
+<a id="demo" class="anchor" href="#demo" aria-hidden="true"><span class="octicon octicon-link"></span></a>Demo</h3>
 
-<p>Real content of this page will be available later. My apologies for any inconveniences.</p>
+        <div id="examine" class="container">
+          <div class="row page-header">
+
+            <div class="col-sm-6 col-md-8 col-lg-9">
+
+              <button id="addCntr" class="btn btn-default" title="Добавить счетчик"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Добавить</button>
+
+              &nbsp;&nbsp;
+
+              <div class="btn-group" role="group" aria-label="...">
+                <a class="app-btn-add__001 btn btn-default" href="#" role="button">+0.01</a>
+                <a class="app-btn-add__01_ btn btn-default" href="#" role="button">+0.1</a>
+                <a class="app-btn-add__1__ btn btn-default" href="#" role="button">+1</a>
+                <a class="app-btn-add_10__ btn btn-default" href="#" role="button">+10</a>
+              </div>
+
+              <button type="button" class="app-btn-go btn btn-primary"><span class="glyphicon glyphicon-play" aria-hidden="true"></span> Пуск!</button>
+
+            </div>
+
+            <div class="col-sm-6 col-md-4 col-lg-3">
+
+              <div class="input-group has-error">
+                <span class="input-group-btn">
+                  <button type="button" class="app-btn-reset btn btn-danger"><span class="glyphicon glyphicon-repeat" aria-hidden="true"></span> Сбросить до</button>
+                </span>
+                <input class="app-inp-reset form-control" type="number" min="0" max="100000000" value="175" placeholder="Значение сброса" title="Значение сброса"/>
+                <div class="input-group-addon">ед</div>
+              </div><!-- /input-group -->
+
+            </div>
+
+          </div>
+
+          <div id="cntrs" class="row">
+
+          </div>
+
+          <template id="cntrBlock" class="hidden">
+            <div class="col-xs-6 col-sm-4 col-md-3 col-lg-2">
+
+              <div class="panel panel-default">
+
+                <div class="panel-heading clearfix">
+                  <button type="button" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="panel-body">
+
+                  <div class="text-center bg-success">
+
+                    <span class="counter">123.55</span>
+
+                  </div>
+
+                </div>
+
+                <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                  <a class="app-btn-add__001 btn btn-default btn-xs" href="#" role="button">+0.01</a>
+                  <a class="app-btn-add__01_ btn btn-default btn-xs" href="#" role="button">+0.1</a>
+                  <a class="app-btn-add__1__ btn btn-default btn-xs" href="#" role="button">+1</a>
+                  <a class="app-btn-add_10__ btn btn-default btn-xs" href="#" role="button">+10</a>
+                </div>
+
+                <div class="input-group">
+                  <input class="app-inp-value form-control input-sm" type="number" min="0" max="100000000" value="2016" placeholder="Новое значение" title="Новое значение"/>
+                  <div class="input-group-addon">ед</div>
+                </div>
+                <div class="input-group">
+                  <input class="app-inp-delay form-control input-sm" type="number" min="0" max="20000" value="5000" placeholder="Интервал в меллисекундах" title="Интервал в меллисекундах"/>
+                  <div class="input-group-addon">мс</div>
+                </div>
+
+                <button type="button" class="app-btn-go btn btn-primary btn-block"><span class="glyphicon glyphicon-play" aria-hidden="true"></span> Пуск!</button>
+                <div class="app-btn-reset hidden"></div>
+
+              </div>
+
+            </div>
+          </template>
+        </div>
       </section>
 
       <footer>
