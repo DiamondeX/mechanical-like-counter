@@ -26,9 +26,17 @@
 
   $.fn[pluginName] = function(action, param1, param2){
     var options = param1;
-    if(typeof action === "object"){
-      options = action;
+    if(action == null || typeof action === "object"){
+      options = action || {};
       action = "create";
+    }
+
+    if(action === "get"){
+      return this.eq(0).data(pluginName);
+    }
+
+    if(action === "getValue"){
+      return this.eq(0).data(pluginName).getValue();
     }
 
     if(action === "create"){
@@ -47,11 +55,8 @@
     }
 
     return this.each(function(){
-
       var mecntr = $(this).data(pluginName);
-
       if(mecntr) mecntr.execute(action, param1, param2);
-
     });
   };
 
@@ -139,6 +144,27 @@
 
     this._initDom();
 
+    return {
+      execute: function (action, param1, param2) {
+        return self.execute(action, param1, param2);
+      },
+      spinTo: function(newVal, delayMs){
+        return self.spinTo(newVal, delayMs);
+      },
+      resetTo: function(newVal){
+        return self.resetTo(newVal);
+      },
+      setImmediate: function(newVal){
+        return self.resetTo(newVal);
+      },
+      getValue: function(){
+        return self.getValue();
+      },
+      destroy: function(){
+        return self.destroy();
+      }
+    }
+
   };
 
   Mecntr.defaultOptions = {
@@ -156,7 +182,7 @@
   };
   Mecntr.pluginName = pluginName;
 
-  var allActions = "spinTo,resetTo,setImmediate,getValue,destroy".split(",");
+  var allActions = "spinTo,resetTo,setImmediate,destroy".split(",");
   Mecntr.prototype.execute = function (action, param1, param2) {
     if(!~allActions.indexOf(action)) return;
     this[action](param1, param2);
@@ -355,6 +381,9 @@
     , t2      // time in seconds of spin slowdown
     ;
 
+    clearInterval(self._interval);
+    this._setImmediate(oldVal);
+
     this._calcSlowdownParams(aDif, delay, function (t1_, t2_, k_, spN_){
       t1 = t1_; t2 = t2_; k = k_; spN = spN_;
     });
@@ -406,8 +435,6 @@
       }
 
     })();
-
-    clearInterval(self._interval);
 
     o.onBeforeSpin(delayMs, dif, oldVal);
 
@@ -559,6 +586,7 @@
   };
 
   Mecntr.prototype.destroy = function(){
+    clearInterval(this._interval);
     delete this.$el.removeClass(this._opts.baseClass).html(this._oldHtml).data()[pluginName];
   };
 
