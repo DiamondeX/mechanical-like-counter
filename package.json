@@ -1,6 +1,6 @@
 {
   "name": "mechounter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mechounter is a JavaScript plugin to represent enumerable multidigit values to look and behave like mechanical counter. It is currently available only in jQuery flavor",
   "main": "mechounter.js",
   "scripts": {
