@@ -1,26 +1,35 @@
 #forkme {
   position: absolute;
+  top: 0;
+  right: 0;
+  overflow: hidden;
+  width: 220px;
+  height: 150px;
+}
+
+#forkme > div{
+  position: absolute;
   right: -62px;
-  top: 40px;
+  top: 47px;
   transform: rotate(45deg);
   background-color: #483d8b;
   padding: 4px;
   font-weight: bold;
 }
 
-#forkme > a {
+#forkme > div > a {
   padding: 2px 50px;
   color: #add8e6;
   border: solid 2px #add8e6;
 }
 
-#forkme > a:hover {
+#forkme > div > a:hover {
   text-decoration: none;
   color: cornflowerblue;
   border-color: cornflowerblue;
 }
 
-#forkme > a:visited {
+#forkme > div > a:visited {
   text-decoration: none;
 }
 

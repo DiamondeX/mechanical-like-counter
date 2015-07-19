@@ -15,7 +15,7 @@
     <title>Mechounter by DiamondeX</title>
   </head>
   <body>
-    <div id="forkme"><a href="https://github.com/DiamondeX/mechounter">Fork me on GitHub</a></div>
+    <div id="forkme"><div><a href="https://github.com/DiamondeX/mechounter">Fork me on GitHub</a></div></div>
     <div class="jumbotron">
       <div class="container">
         <div class="row">
@@ -69,7 +69,7 @@
       </div>
 
       <template id="cntrBlock" class="hidden">
-        <div class="col-xs-6 col-sm-4 col-md-3 col-lg-2">
+        <div class="col-xs-6 col-sm-4 col-md-3">
 
           <div class="panel panel-default">
 
@@ -130,12 +130,14 @@ $(function(){
       var $cntr, value = 2016, delay = 5000;
 
       var $cntrBlock = $($("#cntrBlock").html()).prependTo("#cntrs").hide().fadeIn(1000, function(){
-        var n = getRandomInt(0,3), rgb = [getRandomInt(0,255), getRandomInt(0,255), getRandomInt(0,255)];
-        if(n !== 3) rgb[n] = 255;
-        if(rgb[0] + rgb[1] + rgb[2] > 245*3) rgb[getRandomInt(0,2)] = getRandomInt(0,128);
+        var n = getRandomInt(0,5), m = n < 3 ? 1 : 2, r = n % 3, g = (r + m) % 3, b = (g + m) % 3;
+        r = r * 85 + getRandomInt(0,85);
+        g = g * 74 + getRandomInt(0,74);
+        b = b * 85 + getRandomInt(0,85);
         $cntr = $cntrBlock.find(".counter").addClass("font-style-"+getRandomInt(1,8)).css({
-          fontSize: getRandomInt(10,24)+"px",
-          color: "rgb("+rgb[0]+", "+rgb[1]+", "+rgb[2]+")"
+          fontSize: getRandomInt(14,24)+"px",
+          fontWeight: getRandomInt(0,1) ? "bold" : "normal",
+          color: "rgb("+r+", "+g+", "+b+")"
         }).mechounter({
           mask: "`7,2",
           value: 1234.56
