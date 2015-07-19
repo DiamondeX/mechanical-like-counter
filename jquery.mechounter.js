@@ -224,13 +224,13 @@
 
   Mecntr.prototype._initDom = function (){
     var self = this
-    , html = ""
     , o = this._opts
     , decimals = o.decimals
     , intDigits = o.intDigits
     ;
 
-    this._oldHtml = this.$el.html("");
+    this._oldHtml = this.$el.html();
+    this.$el.html("");
     this._digitStr = this._makeSpan("digit","");
     this._thousandSepStr = this._makeSpan("thousandSep", o.thousandSep);
 
@@ -587,7 +587,8 @@
 
   Mecntr.prototype.destroy = function(){
     clearInterval(this._interval);
-    delete this.$el.removeClass(this._opts.baseClass).html(this._oldHtml).data()[pluginName];
+    this.$el.removeClass(this._opts.baseClass).html(this._oldHtml);
+    delete this.$el.data()[pluginName];
   };
 
   //************************************
@@ -720,13 +721,14 @@
       };
     }
 
-    //for value down cases a number of highest digits can have only dependent move style (impulsive)
+    //a number of highest digits can have only dependent move style (impulsive)
+    //in cases of constant spin speed for visual comfort
     //so, it accept "fracPrev" parameter as well
     var maxPercDiff = this._num - this.owner._maxPerceptibleDgt;
-    if(!isInc && maxPercDiff >= 1){
+    if(maxPercDiff >= 1){
       this._updateValue = function(value, fracPrev, empty){
-        var floor = Math.floor(value);
-        return this._setVisValue(limit(floor + fracPrev), empty);
+        var round = Math.floor(value);
+        return this._setVisValue(limit(round + fracPrev), empty);
       };
       return;
     }
