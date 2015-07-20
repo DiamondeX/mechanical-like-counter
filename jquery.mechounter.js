@@ -31,6 +31,11 @@
       action = "create";
     }
 
+    if(typeof action === "number"){
+      param1 = action;
+      action = "spinCloserOrResetTo";
+    }
+
     if(action === "get"){
       return this.eq(0).data(pluginName);
     }
@@ -168,7 +173,7 @@
   };
 
   Mecntr.defaultOptions = {
-    mask: " 3,2",
+    mask: "1.0",
     decimalSep: ".",
     thousandSep: "",
     value: 0,
@@ -176,13 +181,14 @@
     showDigitMs: 300,
     refreshDelayMs: 30,
     resetDelayMs: 2500,
+    spinCloserSmoothDelayMs: 1000,
     perceptibleShift: 0.2,
     onBeforeSpin: function(delayMs, valueDelta, startValue){},
     onSpinStep: function(timeFromStartMs, currentValue){}
   };
   Mecntr.pluginName = pluginName;
 
-  var allActions = "spinTo,resetTo,setImmediate,destroy".split(",");
+  var allActions = "spinTo,resetTo,setImmediate,spinCloserOrResetTo,destroy".split(",");
   Mecntr.prototype.execute = function (action, param1, param2) {
     if(!~allActions.indexOf(action)) return;
     this[action](param1, param2);
@@ -346,6 +352,23 @@
 
   Mecntr.prototype.getValue = function(){
     return this._value / this._opts.multiplier;
+  };
+
+  Mecntr.prototype.spinCloserOrResetTo = function(newVal){
+    var oldVal = this.getValue()
+    , now = Date.now()
+    , lastCallMs = this._lastCallMs || now
+    , delayMs = now - lastCallMs
+    ;
+
+    this._lastCallMs = now;
+
+    if(oldVal < newVal){
+      this.spinTo(newVal, delayMs + this._opts.spinCloserSmoothDelayMs);
+    }else{
+      this.resetTo(newVal);
+    }
+
   };
 
   Mecntr.prototype.spinTo = function(newVal, delayMs){
