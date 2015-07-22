@@ -173,7 +173,7 @@
   };
 
   Mecntr.defaultOptions = {
-    mask: "1.0",
+    mask: "3.2",
     decimalSep: ".",
     thousandSep: "",
     value: 0,
@@ -181,7 +181,9 @@
     showDigitMs: 300,
     refreshDelayMs: 30,
     resetDelayMs: 2500,
+    spinCloserDelayMs: 20000,
     spinCloserSmoothDelayMs: 1000,
+    spinCloserMinStep: 0.15,
     perceptibleShift: 0.2,
     onBeforeSpin: function(delayMs, valueDelta, startValue){},
     onSpinStep: function(timeFromStartMs, currentValue){}
@@ -355,20 +357,34 @@
   };
 
   Mecntr.prototype.spinCloserOrResetTo = function(newVal){
-    var oldVal = this.getValue()
-    , now = Date.now()
-    , lastCallMs = this._lastCallMs || now
-    , delayMs = now - lastCallMs
+
+    var oldVal = this.getValue();
+
+    if(newVal === oldVal) return;
+
+    var o = this._opts
+    , now
+    , delayMs
     ;
+
+    if(oldVal > newVal){
+      this.resetTo(newVal);
+      return;
+    }
+
+    if(newVal - oldVal < o.spinCloserMinStep) return;
+
+    if(o.spinCloserDelayMs){
+      this.spinTo(newVal, o.spinCloserDelayMs);
+      return;
+    }
+
+    now = Date.now();
+    delayMs = now - this._lastCallMs || now;
 
     this._lastCallMs = now;
 
-    if(oldVal < newVal){
-      this.spinTo(newVal, delayMs + this._opts.spinCloserSmoothDelayMs);
-    }else{
-      this.resetTo(newVal);
-    }
-
+    this.spinTo(newVal, delayMs + o.spinCloserSmoothDelayMs);
   };
 
   Mecntr.prototype.spinTo = function(newVal, delayMs){
@@ -558,6 +574,7 @@
 
     //setup and run animation
     this._startTime = Date.now();
+    this._value = newVal;
     clearInterval(self._interval);
     self._interval = setInterval(function(){
       var d = 0, t = self._elapsed();
