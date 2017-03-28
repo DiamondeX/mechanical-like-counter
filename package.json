@@ -1,8 +1,8 @@
 {
   "name": "mechounter",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Mechounter is a JavaScript plugin to represent enumerable multidigit values to look and behave like mechanical counter. It is currently available only in jQuery flavor",
-  "main": "mechounter.js",
+  "main": "jquery.mechounter.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -25,10 +25,9 @@
   },
   "homepage": "http://DiamondeX.github.io/mechounter/",
   "devDependencies": {
-    "gulp": "^3.9.0",
-    "gulp-concat": "^2.6.0",
-    "gulp-jshint": "^1.11.2",
-    "gulp-rename": "^1.2.2",
-    "gulp-uglify": "^1.2.0"
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-sourcemaps": "^2.4.1",
+    "gulp-uglify": "^2.1.2"
   }
 }

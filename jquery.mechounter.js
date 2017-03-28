@@ -251,7 +251,7 @@
 
     this._intDigits = 0;
     this._addIntDigit();
-    while(--intDigits) this._addDigit();
+    while(intDigits--) this._addDigit();
 
     this.setImmediate(o.value);
 
