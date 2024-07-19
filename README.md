@@ -1,7 +1,7 @@
-[![NPM](https://nodei.co/npm-dl/mechounter.png?months=1)](https://nodei.co/npm/mechounter/)
+[![NPM](https://nodei.co/npm/mechounter.png)](https://npmjs.org/package/mechounter)
 
 # Mechounter
-Mechounter is a JavaScript plugin to represent enumerable multidigit values to look and behave like mechanical counter. It is currently available only in jQuery flavor.
+Mechounter is a UI component representing enumerable multidigit values that looks and behaves like a mechanical counter. It is written as a JavaScript plugin and currently available in jQuery flavor only. You can try it [here](http://diamondex.github.io/mechounter/).
 
 # TODO-list
 
